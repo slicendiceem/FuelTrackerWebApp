@@ -456,7 +456,7 @@
     // ── Method 1: MAF ────────────────────────────────────────────────────
     if(PIDS.maf.confirmed && p.maf > 0.3){
       fuelRateMethod = "MAF";
-      return clamp((p.maf * 3600) / (AFR_STOICH * FUEL_DENSITY), 0, 80);
+      return clamp((p.maf * 3600) / (AFR_STOICH * FUEL_DENSITY), 0, );
     }
 
     // ── Method 2: RPM + Load + Displacement ─────────────────────────────
@@ -468,7 +468,7 @@
       const airMassGs  = (p.rpm / 120) * disp * VE * airDensity * (p.engineLoad / 100);
       const fuelGramsS = airMassGs / AFR_STOICH;
       fuelRateMethod   = "RPM+LOAD+DISP";
-      return clamp((fuelGramsS * 3600) / FUEL_DENSITY, 0, 80);
+      return clamp((fuelGramsS * 3600) / FUEL_DENSITY, 0, );
     }
 
     // ── Method 2b: RPM + Load without displacement ───────────────────────
@@ -478,7 +478,7 @@
       const VE       = 0.85, airDensity = 1.204;
       const airMassGs= (p.rpm / 120) * estDisp * VE * airDensity * (p.engineLoad / 100);
       fuelRateMethod = "RPM+LOAD(est.)";
-      return clamp((airMassGs / AFR_STOICH * 3600) / FUEL_DENSITY, 0, 80);
+      return clamp((airMassGs / AFR_STOICH * 3600) / FUEL_DENSITY, 0, );
     }
 
     // ── Method 3: Speed + rated consumption ─────────────────────────────
@@ -489,7 +489,7 @@
         ? clamp(p.throttle / 20, 0.5, 3.0)  // 20% throttle = normal cruise
         : 1.0;
       fuelRateMethod = "SPEED+RATED";
-      return clamp((rated * p.speed * throttleFactor) / 100, 0, 80);
+      return clamp((rated * p.speed * throttleFactor) / 100, 0, );
     }
 
     // ── Idle: RPM-based ──────────────────────────────────────────────────
@@ -508,7 +508,7 @@
   // ══════════════════════════════════════════════════════════════════════════
   const S = {
     tab:"live", elapsed:0, chatInput:"", packets:0, lastAt:0,
-    live:{ speed:0,rpm:0,maf:0,coolant:80,throttle:0,engineLoad:0,stft:0,
+    live:{ speed:0,rpm:0,maf:0,coolant:0,throttle:0,engineLoad:0,stft:0,
            tripCost:0,tripKm:0,l100:0,fuelRate:0,efficiency:100 },
     msgs:[{ role:"assistant",
             text:"Hello! I'm your FuelTrack AI Coach.\nConnect your OBD via BLE and I'll analyse your live data.\nAsk me anything about your fuel consumption, engine health, or driving efficiency." }],
