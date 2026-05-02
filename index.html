@@ -456,7 +456,7 @@
     // ── Method 1: MAF ────────────────────────────────────────────────────
     if(PIDS.maf.confirmed && p.maf > 0.3){
       fuelRateMethod = "MAF";
-      return clamp((p.maf * 3600) / (AFR_STOICH * FUEL_DENSITY), 0, );
+      return clamp((p.maf * 3600) / (AFR_STOICH * FUEL_DENSITY), 0, 60);
     }
 
     // ── Method 2: RPM + Load + Displacement ─────────────────────────────
@@ -468,7 +468,7 @@
       const airMassGs  = (p.rpm / 120) * disp * VE * airDensity * (p.engineLoad / 100);
       const fuelGramsS = airMassGs / AFR_STOICH;
       fuelRateMethod   = "RPM+LOAD+DISP";
-      return clamp((fuelGramsS * 3600) / FUEL_DENSITY, 0, );
+      return clamp((fuelGramsS * 3600) / FUEL_DENSITY, 0, 60);
     }
 
     // ── Method 2b: RPM + Load without displacement ───────────────────────
@@ -478,7 +478,7 @@
       const VE       = 0.85, airDensity = 1.204;
       const airMassGs= (p.rpm / 120) * estDisp * VE * airDensity * (p.engineLoad / 100);
       fuelRateMethod = "RPM+LOAD(est.)";
-      return clamp((airMassGs / AFR_STOICH * 3600) / FUEL_DENSITY, 0, );
+      return clamp((airMassGs / AFR_STOICH * 3600) / FUEL_DENSITY, 0, 60);
     }
 
     // ── Method 3: Speed + rated consumption ─────────────────────────────
@@ -489,7 +489,7 @@
         ? clamp(p.throttle / 20, 0.5, 3.0)  // 20% throttle = normal cruise
         : 1.0;
       fuelRateMethod = "SPEED+RATED";
-      return clamp((rated * p.speed * throttleFactor) / 100, 0, );
+      return clamp((rated * p.speed * throttleFactor) / 100, 0, 60);
     }
 
     // ── Idle: RPM-based ──────────────────────────────────────────────────
@@ -604,8 +604,15 @@
     const now=performance.now(), dt=S.lastAt?clamp((now-S.lastAt)/1000,0.1,8):1;
     S.lastAt=now; S.packets++;
 
+    const prevSpeed = S.live.speed || 0;
+    const parsedSpeed = clamp(raw.speed_kph??raw.speed??raw.spd??0,0,260);
+    // Ignore transient single-packet spikes (commonly reported as sudden 260 km/h).
+    const isTopSpike = parsedSpeed >= 250 && prevSpeed < 180 && dt <= 2;
+    const isJumpSpike = Math.abs(parsedSpeed - prevSpeed) > Math.max(35, dt * 90) && dt <= 1.5;
+    const safeSpeed = (isTopSpike || isJumpSpike) ? prevSpeed : parsedSpeed;
+
     const p={
-      speed:     clamp(raw.speed_kph??raw.speed??raw.spd??0,0,260),
+      speed:     safeSpeed,
       rpm:       clamp(raw.rpm??0,0,9000),
       maf:       clamp(raw.maf_gs??raw.maf??0,0,250),
       coolant:   clamp(raw.coolant_c??raw.coolant??raw.cool??80,-40,160),
