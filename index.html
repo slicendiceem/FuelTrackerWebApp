@@ -265,6 +265,7 @@
   const PID_CONFIRM_AT = 12;   // packets before confirming PID absent
   const AFR_STOICH     = 14.7; // stoichiometric air-fuel ratio gasoline
   const FUEL_DENSITY   = 820;  // g/L gasoline
+  const SPEED_OFFSET_KPH = 4.5; // calibration: subtract from OBD speed reading
   const QUICK_PROMPTS  = [
     "How efficient am I driving right now?",
     "Compare my consumption to the rated spec.",
@@ -605,7 +606,7 @@
     S.lastAt=now; S.packets++;
 
     const prevSpeed = S.live.speed || 0;
-    const parsedSpeed = clamp(raw.speed_kph??raw.speed??raw.spd??0,0,260);
+    const parsedSpeed = clamp((raw.speed_kph??raw.speed??raw.spd??0) + SPEED_OFFSET_KPH,0,260);
     // Ignore transient single-packet spikes (commonly reported as sudden 260 km/h).
     const isTopSpike = parsedSpeed >= 250 && prevSpeed < 180 && dt <= 2;
     const isJumpSpike = Math.abs(parsedSpeed - prevSpeed) > Math.max(35, dt * 90) && dt <= 1.5;
