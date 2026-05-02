@@ -266,6 +266,7 @@
   const AFR_STOICH     = 14.7; // stoichiometric air-fuel ratio gasoline
   const FUEL_DENSITY   = 820;  // g/L gasoline
   const SPEED_OFFSET_KPH = 4.5; // calibration: subtract from OBD speed reading
+  const DATA_STALE_MS  = 3000; // no packets threshold to consider engine/data off
   const QUICK_PROMPTS  = [
     "How efficient am I driving right now?",
     "Compare my consumption to the rated spec.",
@@ -561,6 +562,12 @@
   function gpsTripStart(){ GPS.state="active"; gpsResetAcc(); if(S.tab==="trips")patchActiveBanner(); }
   function gpsTripEndSchedule(){ if(GPS.state!=="active")return; GPS.state="ending"; clearTimeout(GPS.stopTimer); GPS.stopTimer=setTimeout(gpsTripFinalize,TRIP_END_DELAY); }
   function gpsTripCancelEnd(){ if(GPS.state!=="ending")return; GPS.state="active"; clearTimeout(GPS.stopTimer); }
+  function gpsTripEndNow(){
+    if(GPS.state!=="active"&&GPS.state!=="ending")return;
+    clearTimeout(GPS.stopTimer);
+    GPS.state="ending";
+    gpsTripFinalize();
+  }
   async function gpsTripFinalize(){
     if(GPS.state!=="ending")return;
     GPS.state="idle"; GPS.endCoord=GPS.lastCoord;
@@ -622,6 +629,20 @@
       stft:      clamp(raw.stft??0,-50,50),
       elm:       !!raw.elm
     };
+
+    if(p.rpm <= 0){
+      S.live={
+        speed:0,rpm:0,maf:0,coolant:0,throttle:0,engineLoad:0,stft:0,
+        fuelRate:0,l100:0,efficiency:0,tripKm:S.live.tripKm,tripCost:S.live.tripCost
+      };
+      gpsTripEndNow();
+      scheduleSave(); updateHeader();
+      if     (S.tab==="live")   patchLive();
+      else if(S.tab==="trips")  patchActiveBanner();
+      else if(S.tab==="weekly") patchWeekly();
+      else                        updateAIChips();
+      return;
+    }
 
     // Update PID detection before computing anything
     updatePidDetection(raw);
@@ -1027,7 +1048,24 @@ INSTRUCTIONS:
     E.serBtn.addEventListener("click",  async()=>S.serial.connected?serDisconnect():await serConnect());
     E.clearBtn.addEventListener("click",()=>clearAllData());
     E.settingsBtn.addEventListener("click",()=>openSetup(true));
-    setInterval(()=>{S.elapsed++;E.clock.textContent=fmtT(S.elapsed);},1000);
+    setInterval(()=>{
+      S.elapsed++;
+      E.clock.textContent=fmtT(S.elapsed);
+
+      const stale = S.lastAt && (performance.now() - S.lastAt) > DATA_STALE_MS;
+      if(stale && S.live.rpm > 0){
+        S.live={
+          speed:0,rpm:0,maf:0,coolant:0,throttle:0,engineLoad:0,stft:0,
+          fuelRate:0,l100:0,efficiency:0,tripKm:S.live.tripKm,tripCost:S.live.tripCost
+        };
+        gpsTripEndNow();
+        scheduleSave(); updateHeader();
+        if     (S.tab==="live")   patchLive();
+        else if(S.tab==="trips")  patchActiveBanner();
+        else if(S.tab==="weekly") patchWeekly();
+        else                        updateAIChips();
+      }
+    },1000);
     gpsInit(); updateHeader(); renderTab();
   }
 
