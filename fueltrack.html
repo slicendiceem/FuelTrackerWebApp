@@ -1,0 +1,1046 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FuelTrack</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:#060b12;--surface:#0b1220;--card:#0e1628;--border:#1a2540;
+      --border2:#141e30;--text:#dde4f0;--muted:#3d5070;--dim:#1c2840;
+      --cyan:#00e5ff;--lime:#39ff88;--amber:#ffb700;--rose:#ff4d6d;
+      --violet:#b06cff;--blue:#6ab4ff;--orange:#ff7a2f;
+      --mono:'Share Tech Mono',monospace;--display:'Bebas Neue',sans-serif;--ui:'Rajdhani',sans-serif;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    html{height:100%;}
+    body{min-height:100%;background:var(--bg);background-image:radial-gradient(ellipse 80% 40% at 70% -5%,#0d2040 0%,transparent 60%),radial-gradient(ellipse 40% 60% at -10% 80%,#0a1a30 0%,transparent 60%);color:var(--text);font-family:var(--mono);overflow:hidden;}
+    @media(max-width:700px){body{overflow:auto;}}
+    #app{display:flex;flex-direction:column;height:100vh;}
+    @media(max-width:700px){#app{height:auto;min-height:100dvh;}}
+    ::-webkit-scrollbar{width:3px;height:3px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:#1e2e45;border-radius:2px;}
+
+    /* ── SETUP OVERLAY ─────────────────────────────────────────────────── */
+    #setup-overlay{position:fixed;inset:0;z-index:9999;background:var(--bg);background-image:radial-gradient(ellipse 80% 40% at 70% -5%,#0d2040 0%,transparent 60%),radial-gradient(ellipse 40% 60% at -10% 80%,#0a1a30 0%,transparent 60%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+    #setup-overlay.hidden{display:none;}
+    .setup-box{width:100%;max-width:480px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:30px 28px;}
+    .setup-brand{font-family:var(--display);font-size:32px;letter-spacing:0.1em;color:var(--text);text-align:center;margin-bottom:4px;}
+    .setup-brand em{color:var(--cyan);font-style:normal;}
+    .setup-subtitle{font-size:9px;color:var(--muted);letter-spacing:0.15em;text-align:center;margin-bottom:28px;}
+    .setup-step-indicator{display:flex;gap:6px;justify-content:center;margin-bottom:24px;}
+    .setup-step-dot{width:8px;height:8px;border-radius:50%;background:var(--border);}
+    .setup-step-dot.active{background:var(--cyan);box-shadow:0 0 6px var(--cyan);}
+    .setup-step-dot.done{background:var(--lime);}
+    .setup-step-label{font-family:var(--display);font-size:14px;color:var(--muted);letter-spacing:0.1em;margin-bottom:10px;}
+    .setup-select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--mono);font-size:12px;padding:11px 14px;outline:none;appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%233d5070' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;transition:border-color .2s;}
+    .setup-select:focus{border-color:var(--cyan);}
+    .setup-select:disabled{opacity:0.4;cursor:not-allowed;}
+    .setup-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--mono);font-size:14px;padding:11px 14px;outline:none;transition:border-color .2s;}
+    .setup-input:focus{border-color:var(--amber);}
+    .setup-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+    .setup-field-label{font-size:8px;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;}
+    .setup-spinner{display:flex;align-items:center;gap:8px;font-size:9px;color:var(--muted);letter-spacing:0.1em;margin-top:6px;min-height:16px;}
+    .setup-spin{width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:spin .7s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .setup-spec-box{background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;margin-bottom:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+    .setup-spec-item{text-align:center;}
+    .setup-spec-val{font-family:var(--display);font-size:22px;color:var(--cyan);}
+    .setup-spec-unit{font-size:8px;color:var(--muted);letter-spacing:0.1em;margin-top:1px;}
+    .setup-spec-label{font-size:8px;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase;margin-top:2px;}
+    .setup-warn{font-size:9px;color:var(--muted);line-height:1.6;margin-bottom:14px;padding:8px 10px;background:rgba(255,183,0,0.05);border:1px solid rgba(255,183,0,0.15);border-radius:6px;}
+    .setup-btn{width:100%;padding:13px;border:none;border-radius:8px;background:var(--cyan);color:#000;font-family:var(--display);font-size:18px;letter-spacing:0.1em;cursor:pointer;transition:opacity .2s;margin-top:4px;}
+    .setup-btn:hover:not(:disabled){opacity:0.85;}
+    .setup-btn:disabled{background:var(--dim);color:#1a2840;cursor:not-allowed;}
+    .setup-btn.amber{background:var(--amber);}
+    .setup-btn.violet{background:var(--violet);color:#fff;}
+    .setup-btn.rose{background:var(--rose);color:#fff;}
+    .setup-back{background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--display);font-size:14px;letter-spacing:0.08em;padding:8px 16px;cursor:pointer;transition:border-color .2s,color .2s;margin-right:8px;}
+    .setup-back:hover{border-color:var(--cyan);color:var(--cyan);}
+    .setup-btn-row{display:flex;align-items:center;margin-top:8px;}
+    .setup-manual-link{font-size:9px;color:var(--muted);text-align:center;margin-top:12px;cursor:pointer;text-decoration:underline;}
+    .setup-manual-link:hover{color:var(--cyan);}
+    .setup-error{font-size:9px;color:var(--rose);letter-spacing:0.08em;margin-top:6px;min-height:14px;}
+    .confirm-row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--border2);}
+    .confirm-row:last-child{border:none;}
+    .confirm-key{font-size:9px;color:var(--muted);letter-spacing:0.1em;}
+    .confirm-val{font-family:var(--display);font-size:16px;color:var(--text);}
+
+    /* ── MAIN APP ──────────────────────────────────────────────────────── */
+    .header{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:50px;background:rgba(10,16,28,0.95);border-bottom:1px solid var(--border);backdrop-filter:blur(8px);gap:12px;}
+    .brand{font-family:var(--display);font-size:26px;letter-spacing:0.1em;color:var(--text);}
+    .brand em{color:var(--cyan);font-style:normal;}
+    .header-meta{font-size:9px;color:var(--muted);letter-spacing:0.12em;}
+    .header-right{display:flex;align-items:center;gap:14px;}
+    .live-pill{display:flex;align-items:center;gap:6px;background:rgba(57,255,136,0.08);border:1px solid rgba(57,255,136,0.25);border-radius:20px;padding:3px 10px;font-size:9px;color:var(--lime);letter-spacing:0.12em;}
+    .live-dot{width:6px;height:6px;border-radius:50%;background:var(--lime);box-shadow:0 0 6px var(--lime);animation:blink 1.5s ease-in-out infinite;}
+    .clock{font-family:var(--display);font-size:20px;color:var(--muted);letter-spacing:0.08em;}
+    .settings-btn{background:none;border:1px solid var(--border);border-radius:5px;color:var(--muted);font-size:14px;padding:3px 8px;cursor:pointer;transition:border-color .2s,color .2s;}
+    .settings-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+    .tabs{flex-shrink:0;display:flex;border-bottom:1px solid var(--border2);background:rgba(8,12,22,0.9);padding:0 16px;overflow-x:auto;}
+    .tab-btn{background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:var(--display);font-size:15px;letter-spacing:0.1em;padding:10px 14px 9px;color:var(--muted);transition:color .2s,border-color .2s;white-space:nowrap;}
+    .tab-btn:hover:not(.active){color:#7090b0;}
+    .tab-btn.active{color:var(--cyan);border-bottom-color:var(--cyan);}
+    .tab-btn.ai-tab.active{color:var(--violet);border-bottom-color:var(--violet);}
+    .conn-bar{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:7px 20px;border-bottom:1px solid var(--border2);background:rgba(6,10,18,0.8);flex-wrap:wrap;}
+    .conn-btn{font-family:var(--ui);font-weight:700;font-size:11px;letter-spacing:0.08em;padding:5px 12px;border-radius:5px;border:1px solid #1a3a55;background:rgba(0,20,40,0.6);color:var(--blue);cursor:pointer;transition:border-color .2s,color .2s;white-space:nowrap;}
+    .conn-btn:hover:not(:disabled){border-color:var(--cyan);color:#c0eeff;}
+    .conn-btn:disabled{opacity:0.45;cursor:not-allowed;}
+    .conn-btn.danger{border-color:#3a1520;color:var(--rose);}
+    .conn-btn.danger:hover{border-color:var(--rose);color:#ffaaaa;}
+    .status-text{font-size:9px;color:var(--muted);letter-spacing:0.1em;}
+    .status-text.live{color:var(--lime);}
+    .mode-badge{margin-left:auto;font-size:8px;color:#2a4060;letter-spacing:0.12em;white-space:nowrap;}
+    .main{flex:1;min-height:0;overflow-y:auto;padding:14px 20px;}
+    @media(max-width:700px){.main{overflow-y:visible;padding:10px 12px;}.header,.tabs,.conn-bar{padding-left:12px;padding-right:12px;}}
+    .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;}
+    .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+    .g2{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:8px;}
+    @media(max-width:900px){.g3,.g4{grid-template-columns:repeat(2,1fr);}}
+    @media(max-width:700px){.g3,.g4,.g2{grid-template-columns:1fr;}}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:8px;}
+    .card-p{padding:12px 14px;}
+    .mb8{margin-bottom:8px;}
+    .label{font-size:8px;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:5px;}
+    .metric-card{padding:14px;}
+    .metric-val{font-family:var(--display);font-size:36px;line-height:1;}
+    .metric-unit{font-size:9px;color:var(--dim);letter-spacing:0.1em;margin-top:2px;}
+    .gauge-card{padding:10px;display:flex;flex-direction:column;align-items:center;gap:4px;}
+    .gauge-wrap{position:relative;width:100px;height:100px;}
+    .gauge-wrap svg{position:absolute;inset:0;}
+    .gauge-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+    .gauge-val{font-family:var(--display);font-size:22px;line-height:1;}
+    .gauge-unit{font-size:8px;color:var(--muted);margin-top:2px;}
+    .stat-name{font-size:8px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:3px;}
+    .stat-val{font-family:var(--display);font-size:20px;line-height:1;}
+    .stat-unit{font-size:8px;color:#20304a;margin-left:2px;}
+    .bar-track{height:2px;background:var(--border);border-radius:1px;margin-top:5px;overflow:hidden;}
+    .bar-fill{height:100%;border-radius:1px;transition:width 0.4s ease;}
+    .stat-unavail{opacity:0.25;pointer-events:none;}
+    .pid-badge{font-size:7px;color:var(--rose);letter-spacing:0.1em;margin-top:2px;}
+    .pid-method{font-size:7px;color:#2a4060;letter-spacing:0.08em;margin-top:3px;}
+    .tip{display:flex;align-items:flex-start;gap:10px;padding:10px 13px;border-radius:7px;background:rgba(0,229,255,0.04);border:1px solid rgba(0,229,255,0.12);margin-top:8px;}
+    .tip-label{font-family:var(--display);font-size:13px;color:var(--cyan);margin-bottom:2px;}
+    .tip-body{font-size:10px;color:#5a7090;line-height:1.7;}
+    .rawlog-card{padding:10px 14px;margin-top:8px;}
+    .rawlog-body{font-size:9px;color:#1e3a55;max-height:90px;overflow-y:auto;line-height:1.9;font-family:var(--mono);word-break:break-all;}
+    .rawlog-line{color:#1e3a55;}
+    .rawlog-line.parsed{color:#2a5070;}
+    .rawlog-line.err{color:#502030;}
+    .week-chart-card{padding:14px 16px;margin-bottom:8px;}
+    .week-bars{display:flex;align-items:flex-end;gap:6px;height:130px;}
+    .week-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;}
+    .week-bar-wrap{flex:1;width:100%;display:flex;align-items:flex-end;}
+    .week-bar{width:100%;border-radius:4px 4px 0 0;background:linear-gradient(180deg,#182840,#0e1e30);border:1px solid #1e2e45;min-height:3px;transition:height .4s ease;}
+    .week-bar.today{background:linear-gradient(180deg,var(--amber),#cc7700);border-color:rgba(255,183,0,0.4);}
+    .week-day-label{font-size:8px;letter-spacing:0.06em;color:var(--muted);}
+    .week-day-label.today{color:var(--amber);}
+    .week-val{font-family:var(--display);font-size:11px;color:var(--amber);}
+    .trip-list{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;}
+    .trip-card{padding:14px 16px;}
+    .trip-route-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+    .trip-area{font-family:var(--display);font-size:20px;color:var(--text);letter-spacing:0.04em;}
+    .trip-arrow{font-size:12px;color:var(--muted);}
+    .trip-meta{font-size:9px;color:var(--muted);margin-bottom:10px;}
+    .trip-stats{display:flex;gap:18px;flex-wrap:wrap;}
+    .trip-stat-label{font-size:8px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:2px;}
+    .trip-stat-val{font-family:var(--display);font-size:22px;line-height:1;}
+    .trip-stat-unit{font-size:9px;color:#20304a;margin-left:2px;}
+    .active-trip-banner{padding:14px 16px;margin-bottom:8px;border-radius:8px;background:rgba(0,229,255,0.04);border:1px solid rgba(0,229,255,0.18);}
+    .active-trip-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+    .active-trip-dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:blink 1s ease-in-out infinite;flex-shrink:0;}
+    .active-trip-title{font-family:var(--display);font-size:16px;color:var(--cyan);letter-spacing:0.08em;}
+    .active-trip-from{font-size:9px;color:var(--muted);margin-bottom:10px;}
+    .active-trip-stats{display:flex;gap:18px;flex-wrap:wrap;}
+    .gps-badge{display:inline-flex;align-items:center;gap:5px;font-size:8px;color:var(--muted);letter-spacing:0.1em;background:rgba(106,180,255,0.06);border:1px solid rgba(106,180,255,0.15);border-radius:4px;padding:2px 8px;margin-left:auto;}
+    .gps-dot{width:5px;height:5px;border-radius:50%;background:var(--blue);}
+    .gps-dot.fix{background:var(--lime);box-shadow:0 0 5px var(--lime);animation:blink 2s ease-in-out infinite;}
+    .rated-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(106,180,255,0.04);border:1px solid rgba(106,180,255,0.12);border-radius:6px;margin-bottom:8px;flex-wrap:wrap;}
+    .rated-item{display:flex;flex-direction:column;align-items:center;min-width:60px;}
+    .rated-val{font-family:var(--display);font-size:18px;color:var(--blue);}
+    .rated-lbl{font-size:7px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;}
+    .rated-sep{width:1px;height:30px;background:var(--border);}
+
+    /* ── AI TAB ──────────────────────────────────────────────────────── */
+    .ai-container{display:flex;flex-direction:column;height:calc(100vh - 162px);}
+    @media(max-width:700px){.ai-container{height:auto;min-height:500px;}}
+    .live-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;flex-shrink:0;}
+    .chip{display:flex;gap:6px;align-items:center;padding:4px 11px;border-radius:4px;background:var(--card);border:1px solid var(--border);}
+    .chip-label{font-size:8px;color:var(--muted);letter-spacing:0.1em;}
+    .chip-val{font-family:var(--display);font-size:16px;}
+    .messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-bottom:6px;min-height:150px;}
+    .msg-row{display:flex;}
+    .msg-row.user{justify-content:flex-end;}
+    .bubble{max-width:82%;padding:9px 13px;font-size:11px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;}
+    .bubble.assistant{border-radius:10px 10px 10px 2px;background:#0c1828;border:1px solid #192a42;color:#a0b8d0;}
+    .bubble.user{border-radius:10px 10px 2px 10px;background:#0c2235;border:1px solid #1a3a55;color:#80c0e8;}
+    .bubble-label{font-size:8px;color:var(--violet);letter-spacing:0.12em;margin-bottom:4px;}
+    .bubble.thinking .dots span{animation:blink 1.2s ease-in-out infinite;}
+    .bubble.thinking .dots span:nth-child(2){animation-delay:.2s;}
+    .bubble.thinking .dots span:nth-child(3){animation-delay:.4s;}
+    .quick-prompts{display:flex;gap:5px;overflow-x:auto;padding-bottom:8px;flex-shrink:0;}
+    .qpbtn{white-space:nowrap;padding:4px 11px;border-radius:20px;background:none;border:1px solid var(--border);color:var(--muted);font-size:9px;font-family:var(--mono);cursor:pointer;transition:border-color .2s,color .2s;}
+    .qpbtn:hover{border-color:rgba(176,108,255,0.5);color:var(--violet);}
+    .chat-input-row{display:flex;gap:8px;flex-shrink:0;}
+    .chat-textarea{flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;color:#a0c0e0;font-family:var(--mono);font-size:11px;padding:9px 12px;resize:none;outline:none;min-height:52px;transition:border-color .2s;}
+    .chat-textarea:focus{border-color:rgba(176,108,255,0.4);}
+    .send-btn{padding:0 18px;border:none;border-radius:8px;background:var(--violet);color:#fff;font-family:var(--display);font-size:16px;letter-spacing:0.05em;cursor:pointer;transition:opacity .2s;}
+    .send-btn:disabled{background:var(--dim);color:#1a2840;cursor:not-allowed;}
+
+    /* AI key setup */
+    .ai-key-box{padding:20px;background:rgba(176,108,255,0.05);border:1px solid rgba(176,108,255,0.2);border-radius:10px;margin-bottom:12px;}
+    .ai-key-title{font-family:var(--display);font-size:18px;color:var(--violet);letter-spacing:0.08em;margin-bottom:6px;}
+    .ai-key-sub{font-size:9px;color:var(--muted);line-height:1.7;margin-bottom:14px;}
+    .ai-key-input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--mono);font-size:11px;padding:9px 12px;outline:none;transition:border-color .2s;}
+    .ai-key-input:focus{border-color:var(--violet);}
+    .ai-key-save{padding:9px 20px;border:none;border-radius:7px;background:var(--violet);color:#fff;font-family:var(--display);font-size:15px;letter-spacing:0.08em;cursor:pointer;margin-top:10px;width:100%;}
+    .ai-key-note{font-size:8px;color:#2a4060;line-height:1.6;margin-top:8px;}
+    .ai-key-change{font-size:8px;color:var(--muted);cursor:pointer;text-decoration:underline;margin-left:8px;}
+    .ai-key-change:hover{color:var(--violet);}
+
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    .fade-up{animation:fadeUp 0.28s ease forwards;}
+  </style>
+</head>
+<body>
+
+<div id="setup-overlay">
+  <div class="setup-box" id="setup-box"></div>
+</div>
+
+<div id="app" style="display:none">
+  <header class="header">
+    <div>
+      <div class="brand">FUEL<em>TRACK</em></div>
+      <div class="header-meta" id="header-meta">—</div>
+    </div>
+    <div class="header-right">
+      <button class="settings-btn" id="settings-btn" title="Change car">⚙</button>
+      <div class="live-pill" id="live-pill">
+        <div class="live-dot" id="live-dot"></div>
+        <span id="live-label">IDLE</span>
+      </div>
+      <div class="clock" id="clock">00:00</div>
+    </div>
+  </header>
+  <nav class="tabs" id="tabs">
+    <button class="tab-btn active" data-tab="live">LIVE</button>
+    <button class="tab-btn" data-tab="trips">TRIPS</button>
+    <button class="tab-btn" data-tab="weekly">WEEKLY</button>
+    <button class="tab-btn ai-tab" data-tab="ai">AI COACH</button>
+  </nav>
+  <section class="conn-bar">
+    <button class="conn-btn" id="ble-btn">CONNECT BLE</button>
+    <button class="conn-btn" id="ser-btn">CONNECT ESP32</button>
+    <button class="conn-btn danger" id="clear-btn">CLEAR DATA</button>
+    <span class="status-text" id="status-txt">NOT CONNECTED</span>
+    <span class="mode-badge" id="mode-badge">PACKETS: 0</span>
+  </section>
+  <main class="main" id="content"></main>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ── Date helpers — must be first ──────────────────────────────────────────
+  const WEEK_DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const today    = () => WEEK_DAYS[new Date().getDay()];
+  const todayStr = () => { const d=new Date(); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; };
+
+  // ── Constants ─────────────────────────────────────────────────────────────
+  const NUS_SVC        = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+  const NUS_TX         = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+  const BLE_NAME       = "FuelTrack_BLE";
+  const RAW_LOG_MAX    = 30;
+  const TRIP_START_SPD = 5;
+  const TRIP_END_SPD   = 3;
+  const TRIP_END_DELAY = 20000;
+  const SAVE_DEBOUNCE  = 2000;
+  const MPG_TO_L100    = mpg => mpg > 0 ? 235.215 / mpg : 0;
+  const PROXY          = "https://corsproxy.io/?";
+  const FE_BASE        = "https://www.fueleconomy.gov/ws/rest";
+  const PID_CONFIRM_AT = 12;   // packets before confirming PID absent
+  const AFR_STOICH     = 14.7; // stoichiometric air-fuel ratio gasoline
+  const FUEL_DENSITY   = 820;  // g/L gasoline
+  const QUICK_PROMPTS  = [
+    "How efficient am I driving right now?",
+    "Compare my consumption to the rated spec.",
+    "What was my best trip?",
+    "Estimate my monthly fuel cost.",
+    "Is my engine healthy?",
+    "Tips to improve fuel economy."
+  ];
+
+  // ── localStorage keys ────────────────────────────────────────────────────
+  const LS = {
+    CAR:"ft_car_profile", DAY:"ft_daySpend", TRIPS:"ft_gpsTrips",
+    SESSION:"ft_session", MSGS:"ft_msgs",    AIKEY:"ft_openai_key"
+  };
+
+  // ── Car profile ──────────────────────────────────────────────────────────
+  let CAR = null;
+  let OPENAI_KEY = "";
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  SETUP WIZARD  (unchanged from previous version — condensed)
+  // ══════════════════════════════════════════════════════════════════════════
+  const SETUP = { step:1, year:null, make:null, model:null, trimId:null, trimText:null, vehicleData:null, manualL100:null, fuelPrice:17.25, loading:false };
+  const setupEl = () => document.getElementById("setup-box");
+
+  async function feGet(path) {
+    const r = await fetch(`${PROXY}${encodeURIComponent(FE_BASE+path)}`,{headers:{"Accept":"application/json"}});
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  }
+  function feItems(d){ const raw=d?.menuItem; if(!raw)return[]; return Array.isArray(raw)?raw:[raw]; }
+  async function fetchYears(){ const d=await feGet("/vehicle/menu/year"); return feItems(d).map(i=>i.value??i.text).filter(y=>parseInt(y)>=1990).sort((a,b)=>b-a); }
+  async function fetchMakes(y){ const d=await feGet(`/vehicle/menu/make?year=${y}`); return feItems(d).map(i=>i.value??i.text).sort(); }
+  async function fetchModels(y,m){ const d=await feGet(`/vehicle/menu/model?year=${y}&make=${encodeURIComponent(m)}`); return feItems(d).map(i=>i.value??i.text).sort(); }
+  async function fetchTrims(y,m,mo){ const d=await feGet(`/vehicle/menu/options?year=${y}&make=${encodeURIComponent(m)}&model=${encodeURIComponent(mo)}`); return feItems(d).map(i=>({id:i.value,text:i.text})); }
+  async function fetchVehicle(id){ return feGet(`/vehicle/${id}`); }
+
+  function stepDots(cur,tot=6){ return Array.from({length:tot},(_,i)=>`<div class="setup-step-dot ${i+1<cur?"done":i+1===cur?"active":""}"></div>`).join(""); }
+
+  async function renderStep(n){
+    SETUP.step=n;
+    const box=setupEl();
+    const hdr=`<div class="setup-brand">FUEL<em>TRACK</em></div><div class="setup-subtitle">VEHICLE SETUP</div><div class="setup-step-indicator">${stepDots(n)}</div>`;
+    if(n===1){
+      box.innerHTML=`${hdr}<div class="setup-step-label">SELECT YEAR</div><div class="setup-field"><select class="setup-select" id="sel-year"><option value="">Loading…</option></select><div class="setup-error" id="setup-err"></div></div><button class="setup-btn" id="step-next" disabled>NEXT →</button>`;
+      const sel=document.getElementById("sel-year"),btn=document.getElementById("step-next");
+      try{ const yrs=await fetchYears(); sel.innerHTML=`<option value="">Select year…</option>`+yrs.map(y=>`<option value="${y}"${y===SETUP.year?" selected":""}>${y}</option>`).join(""); if(SETUP.year)btn.disabled=false; sel.onchange=()=>{SETUP.year=sel.value;btn.disabled=!SETUP.year;}; btn.onclick=()=>renderStep(2); }
+      catch(e){ document.getElementById("setup-err").textContent="Could not load years — check connection."; }
+    } else if(n===2){
+      box.innerHTML=`${hdr}<div class="setup-step-label">SELECT MAKE</div><div class="setup-field"><select class="setup-select" id="sel-make"><option value="">Loading…</option></select><div class="setup-spinner" id="spin"><div class="setup-spin"></div>Fetching…</div><div class="setup-error" id="setup-err"></div></div><div class="setup-btn-row"><button class="setup-back" id="step-back">← BACK</button><button class="setup-btn" id="step-next" disabled style="flex:1">NEXT →</button></div>`;
+      document.getElementById("step-back").onclick=()=>renderStep(1);
+      const sel=document.getElementById("sel-make"),btn=document.getElementById("step-next");
+      try{ const ms=await fetchMakes(SETUP.year); document.getElementById("spin").style.display="none"; sel.innerHTML=`<option value="">Select make…</option>`+ms.map(m=>`<option value="${m}"${m===SETUP.make?" selected":""}>${m}</option>`).join(""); if(SETUP.make)btn.disabled=false; sel.onchange=()=>{SETUP.make=sel.value;btn.disabled=!SETUP.make;}; btn.onclick=()=>renderStep(3); }
+      catch(e){ document.getElementById("setup-err").textContent="Could not load makes."; document.getElementById("spin").style.display="none"; }
+    } else if(n===3){
+      box.innerHTML=`${hdr}<div class="setup-step-label">SELECT MODEL</div><div class="setup-field"><select class="setup-select" id="sel-model"><option value="">Loading…</option></select><div class="setup-spinner" id="spin"><div class="setup-spin"></div>Fetching…</div><div class="setup-error" id="setup-err"></div></div><div class="setup-btn-row"><button class="setup-back" id="step-back">← BACK</button><button class="setup-btn" id="step-next" disabled style="flex:1">NEXT →</button></div>`;
+      document.getElementById("step-back").onclick=()=>renderStep(2);
+      const sel=document.getElementById("sel-model"),btn=document.getElementById("step-next");
+      try{ const ms=await fetchModels(SETUP.year,SETUP.make); document.getElementById("spin").style.display="none"; sel.innerHTML=`<option value="">Select model…</option>`+ms.map(m=>`<option value="${m}"${m===SETUP.model?" selected":""}>${m}</option>`).join(""); if(SETUP.model)btn.disabled=false; sel.onchange=()=>{SETUP.model=sel.value;btn.disabled=!SETUP.model;}; btn.onclick=()=>renderStep(4); }
+      catch(e){ document.getElementById("setup-err").textContent="Could not load models."; document.getElementById("spin").style.display="none"; }
+    } else if(n===4){
+      box.innerHTML=`${hdr}<div class="setup-step-label">SELECT TRIM / ENGINE</div><div class="setup-field"><select class="setup-select" id="sel-trim"><option value="">Loading…</option></select><div class="setup-spinner" id="spin"><div class="setup-spin"></div>Fetching…</div><div class="setup-error" id="setup-err"></div></div><div id="trim-specs" style="display:none"><div class="setup-spec-box" id="spec-box"></div></div><div class="setup-btn-row"><button class="setup-back" id="step-back">← BACK</button><button class="setup-btn" id="step-next" disabled style="flex:1">NEXT →</button></div><div class="setup-manual-link" id="manual-link">Can't find your car? Enter manually</div>`;
+      document.getElementById("step-back").onclick=()=>renderStep(3);
+      document.getElementById("manual-link").onclick=()=>renderManual();
+      const sel=document.getElementById("sel-trim"),btn=document.getElementById("step-next");
+      try{
+        const trims=await fetchTrims(SETUP.year,SETUP.make,SETUP.model);
+        document.getElementById("spin").style.display="none";
+        sel.innerHTML=`<option value="">Select trim…</option>`+trims.map(t=>`<option value="${t.id}"${t.id==SETUP.trimId?" selected":""}>${t.text}</option>`).join("");
+        if(SETUP.trimId){ sel.value=SETUP.trimId; await loadTrimSpecs(SETUP.trimId,btn); }
+        sel.onchange=async()=>{ SETUP.trimId=sel.value; SETUP.trimText=sel.options[sel.selectedIndex]?.text||""; btn.disabled=true; if(SETUP.trimId)await loadTrimSpecs(SETUP.trimId,btn); };
+        btn.onclick=()=>renderStep(5);
+      }catch(e){ document.getElementById("setup-err").textContent="Could not load trims."; document.getElementById("spin").style.display="none"; }
+    } else if(n===5){
+      box.innerHTML=`${hdr}<div class="setup-step-label">FUEL PRICE</div><div class="setup-field"><div class="setup-field-label">Price per litre (local currency)</div><input class="setup-input" id="fuel-price-input" type="number" min="0.01" step="0.01" value="${SETUP.fuelPrice}" placeholder="e.g. 17.25"/><div class="setup-error" id="setup-err"></div></div><div class="setup-warn">Enter the current fuel price per litre in your country.<br>Egypt: ~17.25 EGP/L (Octane 92)</div><div class="setup-btn-row"><button class="setup-back" id="step-back">← BACK</button><button class="setup-btn amber" id="step-next" style="flex:1">NEXT →</button></div>`;
+      document.getElementById("step-back").onclick=()=>renderStep(SETUP.manualL100!==null?"manual":4);
+      document.getElementById("step-next").onclick=()=>{ const v=parseFloat(document.getElementById("fuel-price-input").value); if(!v||v<=0){document.getElementById("setup-err").textContent="Enter a valid price.";return;} SETUP.fuelPrice=v; renderStep(6); };
+    } else if(n===6){
+      const vd=SETUP.vehicleData, comb=SETUP.manualL100!==null?SETUP.manualL100:(vd?MPG_TO_L100(parseFloat(vd.comb08)):0);
+      const city=vd?MPG_TO_L100(parseFloat(vd.city08)):0, hwy=vd?MPG_TO_L100(parseFloat(vd.hwy08)):0;
+      const f1=v=>isFinite(v)&&v>0?v.toFixed(1):"—";
+      box.innerHTML=`${hdr}<div class="setup-step-label">CONFIRM YOUR CAR</div><div style="margin-bottom:16px"><div class="confirm-row"><span class="confirm-key">YEAR</span><span class="confirm-val">${SETUP.year}</span></div><div class="confirm-row"><span class="confirm-key">MAKE</span><span class="confirm-val">${SETUP.make}</span></div><div class="confirm-row"><span class="confirm-key">MODEL</span><span class="confirm-val">${SETUP.model}</span></div><div class="confirm-row"><span class="confirm-key">TRIM</span><span class="confirm-val" style="font-size:12px">${SETUP.trimText||"Manual entry"}</span></div>${vd?.displ?`<div class="confirm-row"><span class="confirm-key">ENGINE</span><span class="confirm-val">${vd.displ}L · ${vd.cylinders} cyl</span></div>`:""} ${vd?.trany?`<div class="confirm-row"><span class="confirm-key">TRANS</span><span class="confirm-val" style="font-size:11px">${vd.trany}</span></div>`:""}<div class="confirm-row"><span class="confirm-key">FUEL PRICE</span><span class="confirm-val">${SETUP.fuelPrice.toFixed(2)}/L</span></div></div><div class="setup-spec-box"><div class="setup-spec-item"><div class="setup-spec-val" style="color:var(--lime)">${f1(comb)}</div><div class="setup-spec-unit">L/100km</div><div class="setup-spec-label">COMBINED</div></div><div class="setup-spec-item"><div class="setup-spec-val" style="color:var(--amber)">${f1(city)}</div><div class="setup-spec-unit">L/100km</div><div class="setup-spec-label">CITY</div></div><div class="setup-spec-item"><div class="setup-spec-val" style="color:var(--cyan)">${f1(hwy)}</div><div class="setup-spec-unit">L/100km</div><div class="setup-spec-label">HIGHWAY</div></div></div><div class="setup-btn-row"><button class="setup-back" id="step-back">← BACK</button><button class="setup-btn violet" id="step-confirm" style="flex:1">START TRACKING ▶</button></div>`;
+      document.getElementById("step-back").onclick=()=>renderStep(5);
+      document.getElementById("step-confirm").onclick=()=>finishSetup(comb,city,hwy);
+    }
+  }
+
+  async function loadTrimSpecs(id,btnNext){
+    const specBox=document.getElementById("trim-specs"),specInner=document.getElementById("spec-box"),errEl=document.getElementById("setup-err");
+    if(!specBox||!specInner)return;
+    specBox.style.display="none"; if(errEl)errEl.textContent="";
+    try{
+      const vd=await fetchVehicle(id); SETUP.vehicleData=vd; SETUP.trimText=SETUP.trimText||`${vd.displ}L ${vd.cylinders}cyl`;
+      const comb=MPG_TO_L100(parseFloat(vd.comb08)),city=MPG_TO_L100(parseFloat(vd.city08)),hwy=MPG_TO_L100(parseFloat(vd.hwy08));
+      const f1=v=>isFinite(v)&&v>0?v.toFixed(1):"—";
+      specInner.innerHTML=`<div class="setup-spec-item"><div class="setup-spec-val" style="color:var(--lime)">${f1(comb)}</div><div class="setup-spec-unit">L/100km</div><div class="setup-spec-label">COMBINED</div></div><div class="setup-spec-item"><div class="setup-spec-val" style="color:var(--amber)">${f1(city)}</div><div class="setup-spec-unit">L/100km</div><div class="setup-spec-label">CITY</div></div><div class="setup-spec-item"><div class="setup-spec-val" style="color:var(--cyan)">${f1(hwy)}</div><div class="setup-spec-unit">L/100km</div><div class="setup-spec-label">HIGHWAY</div></div>`;
+      specBox.style.display="block"; btnNext.disabled=false;
+    }catch(e){ if(errEl)errEl.textContent="Could not load specs — you can still continue."; SETUP.vehicleData=null; btnNext.disabled=false; }
+  }
+
+  function renderManual(){
+    const box=setupEl();
+    box.innerHTML=`<div class="setup-brand">FUEL<em>TRACK</em></div><div class="setup-subtitle">MANUAL ENTRY</div><div class="setup-step-label" style="margin-bottom:14px">ENTER RATED CONSUMPTION</div><div class="setup-field"><div class="setup-field-label">Combined L/100km *</div><input class="setup-input" id="m-comb" type="number" min="1" max="50" step="0.1" placeholder="e.g. 8.5"/></div><div class="setup-field"><div class="setup-field-label">City L/100km (optional)</div><input class="setup-input" id="m-city" type="number" min="1" max="50" step="0.1" placeholder="e.g. 10.5"/></div><div class="setup-field"><div class="setup-field-label">Highway L/100km (optional)</div><input class="setup-input" id="m-hwy" type="number" min="1" max="50" step="0.1" placeholder="e.g. 7.0"/></div><div class="setup-field"><div class="setup-field-label">Car name</div><input class="setup-input" id="m-name" type="text" placeholder="e.g. 2008 Ford Focus" value="${(`${SETUP.year||""} ${SETUP.make||""} ${SETUP.model||""}`).trim()}"/></div><div class="setup-error" id="setup-err"></div><div class="setup-btn-row"><button class="setup-back" id="manual-back">← BACK</button><button class="setup-btn amber" id="manual-next" style="flex:1">NEXT →</button></div>`;
+    document.getElementById("manual-back").onclick=()=>renderStep(4);
+    document.getElementById("manual-next").onclick=()=>{
+      const comb=parseFloat(document.getElementById("m-comb").value);
+      if(!comb||comb<1){document.getElementById("setup-err").textContent="Enter a valid combined L/100km.";return;}
+      SETUP.manualL100=comb; SETUP.vehicleData=null;
+      const name=document.getElementById("m-name").value.trim();
+      SETUP.trimText=name||SETUP.trimText||"Manual Entry";
+      if(name){ const p=name.split(" "); if(!SETUP.year&&p[0])SETUP.year=p[0]; if(!SETUP.make&&p[1])SETUP.make=p[1]; if(!SETUP.model&&p[2])SETUP.model=p.slice(2).join(" "); }
+      renderStep(5);
+    };
+  }
+
+  function finishSetup(combL100,cityL100,hwyL100){
+    CAR={
+      year:SETUP.year, make:SETUP.make, model:SETUP.model, trim:SETUP.trimText||"",
+      vehicleId:SETUP.trimId||null,
+      ratedCombL100:combL100||0, ratedCityL100:cityL100||0, ratedHwyL100:hwyL100||0,
+      displacement:SETUP.vehicleData?.displ||"", cylinders:SETUP.vehicleData?.cylinders||"",
+      transmission:SETUP.vehicleData?.trany||"", fuelType:SETUP.vehicleData?.fuelType1||"",
+      fuelPrice:SETUP.fuelPrice,
+    };
+    try{ localStorage.setItem(LS.CAR,JSON.stringify(CAR)); }catch(e){}
+    document.getElementById("setup-overlay").classList.add("hidden");
+    document.getElementById("app").style.display="flex";
+    initApp();
+  }
+
+  function loadCarProfile(){ try{ const r=localStorage.getItem(LS.CAR); if(r)return JSON.parse(r); }catch(e){} return null; }
+  function openSetup(prefill){ if(prefill&&CAR){SETUP.year=CAR.year;SETUP.make=CAR.make;SETUP.model=CAR.model;SETUP.trimId=CAR.vehicleId;SETUP.trimText=CAR.trim;SETUP.fuelPrice=CAR.fuelPrice;} document.getElementById("app").style.display="none"; document.getElementById("setup-overlay").classList.remove("hidden"); renderStep(1); }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  PID TRACKING
+  //  We detect which sensors the car actually has by observing packets.
+  //  After PID_CONFIRM_AT packets with elm:true and rpm>200, any field that
+  //  was never non-trivial is marked unavailable.
+  // ══════════════════════════════════════════════════════════════════════════
+  const PIDS = {
+    // confirmed = true once we've seen a meaningful value
+    maf:     { confirmed:false, seen:false },
+    speed:   { confirmed:true,  seen:false },  // speed usually always works
+    coolant: { confirmed:false, seen:false },
+    throttle:{ confirmed:false, seen:false },
+    load:    { confirmed:false, seen:false },
+    stft:    { confirmed:false, seen:false },
+    rpm:     { confirmed:true,  seen:false },
+    // detection counters
+    _elmPackets: 0,  // packets with elm:true and rpm>200
+    _locked:     false
+  };
+
+  // fuelRate calculation method used (for UI label)
+  let fuelRateMethod = "—";
+
+  function updatePidDetection(raw){
+    if(!raw.elm || (raw.rpm??0) < 200) return;
+    PIDS._elmPackets++;
+
+    // mark as seen if non-trivial
+    if((raw.maf_gs??raw.maf??0) > 0.3)   PIDS.maf.seen      = true;
+    if((raw.coolant_c??raw.coolant??0) > -30) PIDS.coolant.seen  = true;
+    if((raw.throttle??0) > 0.5)           PIDS.throttle.seen = true;
+    if((raw.engineLoad??0) > 0.5)         PIDS.load.seen     = true;
+    if(Math.abs(raw.stft??0) > 0.1)       PIDS.stft.seen     = true;
+
+    if(PIDS._elmPackets >= PID_CONFIRM_AT && !PIDS._locked){
+      PIDS._locked    = true;
+      PIDS.maf.confirmed      = PIDS.maf.seen;
+      PIDS.coolant.confirmed  = PIDS.coolant.seen;
+      PIDS.throttle.confirmed = PIDS.throttle.seen;
+      PIDS.load.confirmed     = PIDS.load.seen;
+      PIDS.stft.confirmed     = PIDS.stft.seen;
+      console.log("[PID] Confirmed:", {
+        maf:PIDS.maf.confirmed, coolant:PIDS.coolant.confirmed,
+        throttle:PIDS.throttle.confirmed, load:PIDS.load.confirmed, stft:PIDS.stft.confirmed
+      });
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  SMART FUEL RATE CALCULATION
+  //  Priority 1: MAF sensor (most accurate)
+  //  Priority 2: RPM + EngineLoad + Displacement (from car profile)
+  //  Priority 3: Speed + Rated consumption + Load factor (fallback)
+  // ══════════════════════════════════════════════════════════════════════════
+  function estimateFuelRate(p){
+    // ── Method 1: MAF ────────────────────────────────────────────────────
+    if(PIDS.maf.confirmed && p.maf > 0.3){
+      fuelRateMethod = "MAF";
+      return clamp((p.maf * 3600) / (AFR_STOICH * FUEL_DENSITY), 0, 80);
+    }
+
+    // ── Method 2: RPM + Load + Displacement ─────────────────────────────
+    const disp = parseFloat(CAR?.displacement) || 0;
+    if(p.rpm > 200 && PIDS.load.confirmed && p.engineLoad > 0 && disp > 0){
+      // Air mass (g/s) = (RPM/2 strokes) × displacement(L) × VE × ρ_air × (load/100)
+      const VE         = 0.85;  // volumetric efficiency assumption
+      const airDensity = 1.204; // g/L at STP
+      const airMassGs  = (p.rpm / 120) * disp * VE * airDensity * (p.engineLoad / 100);
+      const fuelGramsS = airMassGs / AFR_STOICH;
+      fuelRateMethod   = "RPM+LOAD+DISP";
+      return clamp((fuelGramsS * 3600) / FUEL_DENSITY, 0, 80);
+    }
+
+    // ── Method 2b: RPM + Load without displacement ───────────────────────
+    if(p.rpm > 200 && PIDS.load.confirmed && p.engineLoad > 0){
+      // Estimate displacement from cylinders or default 1.6L
+      const estDisp  = CAR?.cylinders ? parseFloat(CAR.cylinders) * 0.4 : 1.6;
+      const VE       = 0.85, airDensity = 1.204;
+      const airMassGs= (p.rpm / 120) * estDisp * VE * airDensity * (p.engineLoad / 100);
+      fuelRateMethod = "RPM+LOAD(est.)";
+      return clamp((airMassGs / AFR_STOICH * 3600) / FUEL_DENSITY, 0, 80);
+    }
+
+    // ── Method 3: Speed + rated consumption ─────────────────────────────
+    const rated = ratedL100();
+    if(p.speed > 5 && rated > 0){
+      // Scale rated by throttle position as load proxy
+      const throttleFactor = PIDS.throttle.confirmed && p.throttle > 0
+        ? clamp(p.throttle / 20, 0.5, 3.0)  // 20% throttle = normal cruise
+        : 1.0;
+      fuelRateMethod = "SPEED+RATED";
+      return clamp((rated * p.speed * throttleFactor) / 100, 0, 80);
+    }
+
+    // ── Idle: RPM-based ──────────────────────────────────────────────────
+    if(p.rpm > 200){
+      // rough idle consumption: ~0.5 L/h per 1000 RPM
+      fuelRateMethod = "RPM(idle est.)";
+      return clamp((p.rpm / 1000) * 0.5, 0, 5);
+    }
+
+    fuelRateMethod = "—";
+    return 0;
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  MAIN STATE
+  // ══════════════════════════════════════════════════════════════════════════
+  const S = {
+    tab:"live", elapsed:0, chatInput:"", packets:0, lastAt:0,
+    live:{ speed:0,rpm:0,maf:0,coolant:80,throttle:0,engineLoad:0,stft:0,
+           tripCost:0,tripKm:0,l100:0,fuelRate:0,efficiency:100 },
+    msgs:[{ role:"assistant",
+            text:"Hello! I'm your FuelTrack AI Coach.\nConnect your OBD via BLE and I'll analyse your live data.\nAsk me anything about your fuel consumption, engine health, or driving efficiency." }],
+    gpsTrips:[],rawLog:[],
+    daySpend:{Sun:0,Mon:0,Tue:0,Wed:0,Thu:0,Fri:0,Sat:0},
+    ble:   {supported:isSecure()&&"bluetooth" in navigator,connected:false,connecting:false,device:null,char:null,buf:"",dec:new TextDecoder()},
+    serial:{supported:isSecure()&&"serial" in navigator,connected:false,connecting:false,port:null,reader:null,buf:"",keepReading:false},
+    aiLoading:false
+  };
+
+  function isSecure(){ return window.isSecureContext||["localhost","127.0.0.1"].includes(location.hostname); }
+
+  // ── Storage ───────────────────────────────────────────────────────────────
+  let saveTimer=null;
+  function scheduleSave(){ clearTimeout(saveTimer); saveTimer=setTimeout(commitSave,SAVE_DEBOUNCE); }
+  function commitSave(){
+    try{
+      localStorage.setItem(LS.DAY,  JSON.stringify(S.daySpend));
+      localStorage.setItem(LS.TRIPS,JSON.stringify(S.gpsTrips));
+      localStorage.setItem(LS.MSGS, JSON.stringify(S.msgs));
+      localStorage.setItem(LS.SESSION,JSON.stringify({date:todayStr(),tripKm:S.live.tripKm,tripCost:S.live.tripCost}));
+    }catch(e){}
+  }
+  function saveNow(){ clearTimeout(saveTimer); commitSave(); }
+
+  function loadStorage(){
+    try{ const r=localStorage.getItem(LS.DAY);     if(r){const p=JSON.parse(r);WEEK_DAYS.forEach(d=>{if(p[d]!==undefined)S.daySpend[d]=p[d];});} }catch(e){}
+    try{ const r=localStorage.getItem(LS.TRIPS);   if(r){S.gpsTrips=JSON.parse(r).map(t=>({...t,startTime:new Date(t.startTime),endTime:new Date(t.endTime)}));} }catch(e){}
+    try{ const r=localStorage.getItem(LS.SESSION); if(r){const s=JSON.parse(r);if(s.date===todayStr()){S.live.tripKm=s.tripKm||0;S.live.tripCost=s.tripCost||0;}else{S.daySpend[today()]=0;localStorage.removeItem(LS.SESSION);}} }catch(e){}
+    try{ const r=localStorage.getItem(LS.MSGS);    if(r){const m=JSON.parse(r);if(Array.isArray(m)&&m.length)S.msgs=m;} }catch(e){}
+    try{ const k=localStorage.getItem(LS.AIKEY);   if(k)OPENAI_KEY=k; }catch(e){}
+  }
+
+  function clearAllData(){
+    if(!confirm("Clear ALL saved data?"))return;
+    [LS.DAY,LS.TRIPS,LS.SESSION,LS.MSGS].forEach(k=>localStorage.removeItem(k));
+    WEEK_DAYS.forEach(d=>{S.daySpend[d]=0;});
+    S.gpsTrips=[]; S.live.tripKm=0; S.live.tripCost=0;
+    S.msgs=[{role:"assistant",text:"Data cleared. Ready to track your next drive!"}];
+    S.packets=0; updateHeader(); renderTab();
+  }
+
+  // ── GPS ───────────────────────────────────────────────────────────────────
+  const GPS={watchId:null,hasFix:false,lastCoord:null,state:"idle",stopTimer:null,startTime:null,startCoord:null,endCoord:null,fuelL:0,distKm:0,cost:0,l100sum:0,l100samples:0,maxSpd:0};
+  function gpsInit(){ if(!navigator.geolocation)return; GPS.watchId=navigator.geolocation.watchPosition(pos=>{GPS.hasFix=true;GPS.lastCoord=pos.coords;updateGpsBadge();},()=>{GPS.hasFix=false;updateGpsBadge();},{enableHighAccuracy:true,maximumAge:5000,timeout:10000}); }
+  function updateGpsBadge(){ const dot=$("gps-dot"),lbl=$("gps-lbl"); if(dot)dot.className="gps-dot"+(GPS.hasFix?" fix":""); if(lbl)lbl.textContent=GPS.hasFix?"GPS FIX":"NO FIX"; }
+  async function reverseGeocode(c){ if(!c)return"Unknown"; try{ const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${c.latitude}&lon=${c.longitude}&format=json`,{headers:{"Accept-Language":"en"}}); const j=await r.json(),a=j.address||{}; return a.suburb||a.neighbourhood||a.village||a.town||a.city_district||a.city||a.county||"Unknown"; }catch{return"Unknown";} }
+  function gpsResetAcc(){ GPS.fuelL=GPS.distKm=GPS.cost=GPS.l100sum=GPS.l100samples=GPS.maxSpd=0; GPS.startTime=new Date(); GPS.startCoord=GPS.lastCoord; GPS.endCoord=null; }
+  function gpsTripStart(){ GPS.state="active"; gpsResetAcc(); if(S.tab==="trips")patchActiveBanner(); }
+  function gpsTripEndSchedule(){ if(GPS.state!=="active")return; GPS.state="ending"; clearTimeout(GPS.stopTimer); GPS.stopTimer=setTimeout(gpsTripFinalize,TRIP_END_DELAY); }
+  function gpsTripCancelEnd(){ if(GPS.state!=="ending")return; GPS.state="active"; clearTimeout(GPS.stopTimer); }
+  async function gpsTripFinalize(){
+    if(GPS.state!=="ending")return;
+    GPS.state="idle"; GPS.endCoord=GPS.lastCoord;
+    const dur=(new Date()-GPS.startTime)/1000;
+    if(GPS.distKm<0.2||dur<30)return;
+    const avgL100=GPS.l100samples>0?GPS.l100sum/GPS.l100samples:0;
+    const trip={id:Date.now(),startTime:GPS.startTime,endTime:new Date(),durationSec:dur,distKm:GPS.distKm,fuelL:GPS.fuelL,cost:GPS.cost,avgL100,maxSpd:GPS.maxSpd,startArea:"…",endArea:"…"};
+    S.gpsTrips.unshift(trip); saveNow();
+    reverseGeocode(GPS.startCoord).then(n=>{trip.startArea=n;saveNow();updateTripCardAreas(trip.id);});
+    reverseGeocode(GPS.endCoord).then(n=>{trip.endArea=n;saveNow();updateTripCardAreas(trip.id);});
+    if(S.tab==="trips")onNewTrip(trip);
+  }
+  function updateTripCardAreas(id){ const trip=S.gpsTrips.find(t=>t.id===id);if(!trip)return; const card=document.querySelector(`[data-trip-id="${id}"]`);if(!card)return; const fa=card.querySelector(".trip-from-area"),ta=card.querySelector(".trip-to-area"); if(fa)fa.textContent=trip.startArea; if(ta)ta.textContent=trip.endArea; }
+  function gpsAccumulate(speed,fuelRate,l100,cost,dt){ if(GPS.state!=="active"&&GPS.state!=="ending")return; GPS.fuelL+=(fuelRate*dt)/3600; GPS.distKm+=(speed*dt)/3600; GPS.cost+=cost; GPS.maxSpd=Math.max(GPS.maxSpd,speed); if(speed>TRIP_START_SPD){GPS.l100sum+=l100;GPS.l100samples++;} }
+  function gpsTick(speed){ if(speed>TRIP_START_SPD&&GPS.state==="idle")gpsTripStart(); else if(speed>TRIP_START_SPD&&GPS.state==="ending")gpsTripCancelEnd(); else if(speed<TRIP_END_SPD&&GPS.state==="active")gpsTripEndSchedule(); }
+
+  // ── DOM ───────────────────────────────────────────────────────────────────
+  const $=id=>document.getElementById(id);
+  let E={};
+  function bindDOM(){ E={tabs:$("tabs"),content:$("content"),clock:$("clock"),livePill:$("live-pill"),liveLabel:$("live-label"),liveDot:$("live-dot"),statusTxt:$("status-txt"),modeBadge:$("mode-badge"),bleBtn:$("ble-btn"),serBtn:$("ser-btn"),clearBtn:$("clear-btn"),settingsBtn:$("settings-btn")}; }
+
+  // ── Helpers ──────���────────────────────────────────────────────────────────
+  const clamp  =(v,a,b)=>{const n=+v;return isFinite(n)?Math.max(a,Math.min(b,n)):a;};
+  const f      =(v,d=0)=>{const n=+v;return isFinite(n)?n.toFixed(d):(0).toFixed(d);};
+  const fmtT   =s=>`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
+  const fmtDur =s=>{const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=Math.floor(s%60);return h>0?`${h}h ${m}m`:m>0?`${m}m ${sc}s`:`${sc}s`;};
+  const fmtDate=d=>{const hh=d.getHours().toString().padStart(2,"0"),mm=d.getMinutes().toString().padStart(2,"0");return `${WEEK_DAYS[d.getDay()]} ${d.getDate()}/${d.getMonth()+1} · ${hh}:${mm}`;};
+  const escLog =s=>String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const fuelPrice=()=>CAR?.fuelPrice||17.25;
+  const ratedL100=()=>CAR?.ratedCombL100||8;
+
+  // ── Raw log ───────────────────────────────────────────────────────────────
+  function pushRaw(text,type="raw"){ S.rawLog.unshift({text,type}); if(S.rawLog.length>RAW_LOG_MAX)S.rawLog.length=RAW_LOG_MAX; refreshRawLog(); }
+  function refreshRawLog(){ const el=$("lv-rawlog"); if(!el)return; el.innerHTML=S.rawLog.map(r=>`<div class="rawlog-line ${r.type==="raw"?"parsed":"err"}">${r.type==="err"?"✗ ":"→ "}${escLog(r.text)}</div>`).join(""); }
+
+  // ── Parse / Handle ────────────────────────────────────────────────────────
+  function parseLine(raw){ const s=raw.indexOf("{"),e=raw.lastIndexOf("}"); if(s<0||e<=s)return null; try{return JSON.parse(raw.slice(s,e+1));}catch(_){return null;} }
+  function handleLine(line,src){ const t=line.trim(); if(!t)return; const pkt=parseLine(t); if(pkt){pushRaw(t,"raw");applyPacket(pkt);}else{pushRaw(t,"err");} }
+
+  // ── Packet apply ──────────────────────────────────────────────────────────
+  function applyPacket(raw){
+    const now=performance.now(), dt=S.lastAt?clamp((now-S.lastAt)/1000,0.1,8):1;
+    S.lastAt=now; S.packets++;
+
+    const p={
+      speed:     clamp(raw.speed_kph??raw.speed??raw.spd??0,0,260),
+      rpm:       clamp(raw.rpm??0,0,9000),
+      maf:       clamp(raw.maf_gs??raw.maf??0,0,250),
+      coolant:   clamp(raw.coolant_c??raw.coolant??raw.cool??80,-40,160),
+      throttle:  clamp(raw.throttle??raw.thr??0,0,100),
+      engineLoad:clamp(raw.engineLoad??raw.load??0,0,100),
+      stft:      clamp(raw.stft??0,-50,50),
+      elm:       !!raw.elm
+    };
+
+    // Update PID detection before computing anything
+    updatePidDetection(raw);
+
+    // Smart fuel rate using best available method
+    const fuelRate   = estimateFuelRate(p);
+    const l100       = p.speed > 5 ? clamp((fuelRate/p.speed)*100,0,99) : (S.live.l100||ratedL100());
+    const rated      = ratedL100();
+    const efficiency = l100 > 0 ? clamp((rated/l100)*100,0,150) : 100;
+    const sampleCost = (fuelRate*dt*fuelPrice())/3600;
+
+    S.daySpend[today()]=(S.daySpend[today()]||0)+(isFinite(sampleCost)?sampleCost:0);
+    S.live={...p,fuelRate,l100,efficiency,tripKm:S.live.tripKm+(p.speed*dt)/3600,tripCost:S.live.tripCost+sampleCost};
+
+    gpsTick(p.speed);
+    gpsAccumulate(p.speed,fuelRate,l100,sampleCost,dt);
+    scheduleSave(); updateHeader();
+
+    if     (S.tab==="live")   patchLive();
+    else if(S.tab==="trips")  patchActiveBanner();
+    else if(S.tab==="weekly") patchWeekly();
+    else                      updateAIChips();
+  }
+
+  // ── BLE ───────────────────────────────────────────────────────────────────
+  function onBLEData(ev){ const b=new Uint8Array(ev.target.value.buffer,ev.target.value.byteOffset,ev.target.value.byteLength); S.ble.buf+=S.ble.dec.decode(b,{stream:true}); const lines=S.ble.buf.split(/\r?\n/); S.ble.buf=lines.pop()||""; lines.forEach(l=>handleLine(l,"ble")); }
+  async function bleDisconnect(){ try{S.ble.char?.removeEventListener("characteristicvaluechanged",onBLEData);S.ble.char?.stopNotifications();}catch(_){} try{if(S.ble.device?.gatt?.connected)S.ble.device.gatt.disconnect();}catch(_){} Object.assign(S.ble,{connected:false,connecting:false,device:null,char:null,buf:""}); updateHeader();renderTab(); }
+  async function bleConnect(){ if(!S.ble.supported){alert("Web Bluetooth requires Chrome/Edge over HTTPS.");return;} if(S.serial.connected)await serDisconnect(); S.ble.connecting=true;updateHeader(); try{ const device=await navigator.bluetooth.requestDevice({filters:[{name:BLE_NAME}],optionalServices:[NUS_SVC]}); device.addEventListener("gattserverdisconnected",()=>bleDisconnect()); const srv=await device.gatt.connect(),svc=await srv.getPrimaryService(NUS_SVC),chr=await svc.getCharacteristic(NUS_TX); await chr.startNotifications(); chr.addEventListener("characteristicvaluechanged",onBLEData); Object.assign(S.ble,{device,char:chr,connected:true,connecting:false}); S.lastAt=0;updateHeader(); }catch(_){ Object.assign(S.ble,{connected:false,connecting:false});updateHeader(); } }
+
+  // ── Serial ────────────────────────────────────────────────────────────────
+  async function serDisconnect(){ S.serial.keepReading=false; try{if(S.serial.reader){await S.serial.reader.cancel();S.serial.reader.releaseLock();}}catch(_){} try{if(S.serial.port)await S.serial.port.close();}catch(_){} Object.assign(S.serial,{connected:false,connecting:false,port:null,reader:null,buf:""}); updateHeader();renderTab(); }
+  async function serReadLoop(){ const dec=new TextDecoder(); S.serial.reader=S.serial.port.readable.getReader(); try{while(S.serial.keepReading){const{value,done}=await S.serial.reader.read();if(done)break;S.serial.buf+=dec.decode(value,{stream:true});const lines=S.serial.buf.split(/\r?\n/);S.serial.buf=lines.pop()||"";lines.forEach(l=>handleLine(l,"serial"));}}catch(_){} await serDisconnect(); }
+  async function serConnect(){ if(!S.serial.supported){alert("Web Serial requires Chrome/Edge.");return;} if(S.ble.connected)await bleDisconnect(); S.serial.connecting=true;updateHeader(); try{ const port=await navigator.serial.requestPort(); await port.open({baudRate:115200}); Object.assign(S.serial,{port,connected:true,connecting:false,keepReading:true,buf:""}); S.lastAt=0;updateHeader();serReadLoop(); }catch(_){ Object.assign(S.serial,{connected:false,connecting:false});updateHeader(); } }
+
+  // ── Header ────────────────────────────────────────────────────────────────
+  function updateHeader(){
+    const isReal=S.ble.connected||S.serial.connected;
+    if(!E.livePill)return;
+    E.livePill.style.background =isReal?"rgba(57,255,136,0.1)":"rgba(106,180,255,0.06)";
+    E.livePill.style.borderColor=isReal?"rgba(57,255,136,0.3)":"rgba(106,180,255,0.2)";
+    E.liveDot.style.background  =isReal?"var(--lime)":"var(--muted)";
+    E.liveDot.style.boxShadow   =isReal?"0 0 6px var(--lime)":"none";
+    E.liveLabel.textContent     =isReal?(S.ble.connected?"BLE":"SERIAL"):"IDLE";
+    E.liveLabel.style.color     =isReal?"var(--lime)":"var(--muted)";
+    if     (S.ble.connected)   {E.statusTxt.className="status-text live";E.statusTxt.textContent="BLE CONNECTED — LIVE DATA";}
+    else if(S.serial.connected){E.statusTxt.className="status-text live";E.statusTxt.textContent="ESP32 SERIAL — LIVE DATA";}
+    else                       {E.statusTxt.className="status-text";     E.statusTxt.textContent="NOT CONNECTED";}
+    E.modeBadge.textContent=`PACKETS: ${S.packets}`;
+    E.bleBtn.textContent=S.ble.connecting   ?"CONNECTING...":S.ble.connected   ?"DISCONNECT BLE"  :"CONNECT BLE";
+    E.bleBtn.disabled=S.ble.connecting;
+    E.serBtn.textContent=S.serial.connecting?"CONNECTING...":S.serial.connected?"DISCONNECT ESP32":"CONNECT ESP32";
+    E.serBtn.disabled=S.serial.connecting;
+    const meta=$("header-meta");
+    if(meta&&CAR) meta.textContent=`${CAR.year} ${CAR.make} ${CAR.model} · ${fuelPrice().toFixed(2)}/L`;
+  }
+
+  // ── Gauge ─────────────────────────────────────────────────────────────────
+  const GAUGE=(()=>{
+    const r=44,cx=50,cy=50,startDeg=-210,sweep=240;
+    const rad=d=>d*Math.PI/180,px=a=>cx+r*Math.cos(rad(a)),py=a=>cy+r*Math.sin(rad(a));
+    const te=startDeg+sweep, TRACK=`M ${px(startDeg)} ${py(startDeg)} A ${r} ${r} 0 1 1 ${px(te)} ${py(te)}`;
+    function arc(val,max){const pct=clamp(val/max,0,1);if(pct<=0)return"";const end=startDeg+sweep*pct,la=sweep*pct>180?1:0;return `M ${px(startDeg)} ${py(startDeg)} A ${r} ${r} 0 ${la} 1 ${px(end)} ${py(end)}`;}
+    return{TRACK,arc};
+  })();
+
+  // ── Live tab ──────────────────────────────────────────────────────────────
+  let liveBuilt=false;
+  function buildStatHTML(label,id,val,unit,dec,color,pct,unavail=false,badge=""){
+    return `<div class="${unavail?"stat-unavail":""}">
+      <div class="stat-name">${label}${badge?`<span class="pid-badge"> ${badge}</span>`:""}</div>
+      <div class="stat-val" id="${id}-val" style="color:${color}">${unavail?"N/A":`${f(val,dec)}<span class="stat-unit">${unit}</span>`}</div>
+      <div class="bar-track"><div class="bar-fill" id="${id}-bar" style="width:${unavail?0:clamp(pct,0,100)}%;background:${color}"></div></div>
+    </div>`;
+  }
+  function buildGaugeSVG(arcId,val,max,color){return `<svg width="100" height="100" viewBox="0 0 100 100"><path d="${GAUGE.TRACK}" fill="none" stroke="#18243a" stroke-width="7" stroke-linecap="round"/><path id="${arcId}" d="${GAUGE.arc(val,max)}" fill="none" stroke="${color}" stroke-width="7" stroke-linecap="round"/></svg>`;}
+
+  function ratedBarHTML(){
+    if(!CAR||!CAR.ratedCombL100)return"";
+    const f1=v=>v>0?v.toFixed(1):"—";
+    return `<div class="rated-bar mb8"><div class="rated-item"><div class="rated-val">${f1(CAR.ratedCombL100)}</div><div class="rated-lbl">COMB L/100</div></div><div class="rated-sep"></div><div class="rated-item"><div class="rated-val">${f1(CAR.ratedCityL100)}</div><div class="rated-lbl">CITY L/100</div></div><div class="rated-sep"></div><div class="rated-item"><div class="rated-val">${f1(CAR.ratedHwyL100)}</div><div class="rated-lbl">HWY L/100</div></div><div class="rated-sep"></div><div class="rated-item" style="flex:1;text-align:left;padding-left:8px"><div style="font-size:8px;color:var(--muted)">MANUFACTURER RATED</div><div style="font-size:9px;color:#2a4060;margin-top:2px">${CAR.year} ${CAR.make} ${CAR.model}</div></div></div>`;
+  }
+
+  function pidMethodLabel(){
+    if(!PIDS._locked && S.packets < PID_CONFIRM_AT) return `<div class="pid-method">DETECTING PIDs… (${S.packets}/${PID_CONFIRM_AT} packets)</div>`;
+    const avail=[]; if(PIDS.maf.confirmed)avail.push("MAF"); if(PIDS.load.confirmed)avail.push("LOAD"); if(PIDS.coolant.confirmed)avail.push("COOLANT"); if(PIDS.stft.confirmed)avail.push("STFT"); if(PIDS.throttle.confirmed)avail.push("THROTTLE");
+    return `<div class="pid-method">PIDs confirmed: ${avail.length?avail.join(" · "):"RPM+SPEED only"} · Fuel calc: ${fuelRateMethod}</div>`;
+  }
+
+  function renderLive(){
+    const L=S.live, rated=ratedL100();
+    const l100c=L.l100<=rated?"var(--lime)":L.l100<rated*1.3?"var(--amber)":"var(--rose)";
+    const coolC=L.coolant>105?"var(--rose)":"var(--lime)";
+    const effC =L.efficiency>=100?"var(--lime)":L.efficiency>75?"var(--amber)":"var(--rose)";
+    const egpkm=L.tripKm>0?L.tripCost/L.tripKm:0;
+
+    E.content.innerHTML=`<div class="fade-up">
+      ${ratedBarHTML()}
+      <div class="g3 mb8">
+        <div class="card metric-card"><div class="label">SESSION COST</div><div class="metric-val" id="lv-tripcost" style="color:var(--amber)">${f(L.tripCost,2)}</div><div class="metric-unit">EGP</div></div>
+        <div class="card metric-card"><div class="label">SESSION KM</div><div class="metric-val" id="lv-dist" style="color:var(--cyan)">${f(L.tripKm,1)}</div><div class="metric-unit">KM</div></div>
+        <div class="card metric-card"><div class="label">COST / KM</div><div class="metric-val" id="lv-costkm" style="color:var(--rose)">${f(egpkm,2)}</div><div class="metric-unit">EGP/KM</div></div>
+      </div>
+      <div class="g3 mb8">
+        <div class="card gauge-card"><div class="label">SPEED</div><div class="gauge-wrap">${buildGaugeSVG("lv-arc-speed",L.speed,160,"var(--cyan)")}<div class="gauge-center"><div class="gauge-val" id="lv-speed" style="color:var(--cyan)">${f(L.speed,0)}</div><div class="gauge-unit">km/h</div></div></div></div>
+        <div class="card gauge-card"><div class="label">L / 100KM</div><div class="gauge-wrap">${buildGaugeSVG("lv-arc-l100",L.l100,rated*2.5,l100c)}<div class="gauge-center"><div class="gauge-val" id="lv-l100" style="color:${l100c}">${f(L.l100,1)}</div><div class="gauge-unit">L/100</div></div></div></div>
+        <div class="card gauge-card"><div class="label">FUEL RATE</div><div class="gauge-wrap">${buildGaugeSVG("lv-arc-fuelrate",L.fuelRate,12,"var(--orange)")}<div class="gauge-center"><div class="gauge-val" id="lv-fuelrate" style="color:var(--orange)">${f(L.fuelRate,2)}</div><div class="gauge-unit">L/h</div></div></div></div>
+      </div>
+      <div class="card card-p mb8">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px">
+          <div class="label" style="margin:0">ENGINE · OBD-II</div>
+          <div id="pid-method-label">${pidMethodLabel()}</div>
+        </div>
+        <div class="g4">
+          ${buildStatHTML("RPM",       "lv-rpm",     L.rpm,        "",    0,"#8090b0",L.rpm/50)}
+          ${buildStatHTML("MAF",       "lv-maf",     L.maf,        "g/s", 1,"#8090b0",L.maf*0.7, PIDS._locked&&!PIDS.maf.confirmed, PIDS._locked&&!PIDS.maf.confirmed?"NO PID":"")}
+          ${buildStatHTML("COOLANT",   "lv-coolant", L.coolant,    "°C",  0,coolC,    L.coolant,  PIDS._locked&&!PIDS.coolant.confirmed,  PIDS._locked&&!PIDS.coolant.confirmed?"NO PID":"")}
+          ${buildStatHTML("VS RATED",  "lv-eff",     L.efficiency, "%",   0,effC,     L.efficiency)}
+          ${buildStatHTML("THROTTLE",  "lv-throttle",L.throttle,   "%",   0,"#8090b0",L.throttle, PIDS._locked&&!PIDS.throttle.confirmed, PIDS._locked&&!PIDS.throttle.confirmed?"NO PID":"")}
+          ${buildStatHTML("ENG LOAD",  "lv-load",    L.engineLoad, "%",   0,"#8090b0",L.engineLoad,PIDS._locked&&!PIDS.load.confirmed,   PIDS._locked&&!PIDS.load.confirmed?"NO PID":"")}
+          ${buildStatHTML("STFT",      "lv-stft",    L.stft,       "%",   1,L.stft>=0?"var(--lime)":"var(--amber)",Math.abs(L.stft)*4, PIDS._locked&&!PIDS.stft.confirmed, PIDS._locked&&!PIDS.stft.confirmed?"NO PID":"")}
+        </div>
+      </div>
+      <div class="tip"><div><div class="tip-label">COACH</div><div class="tip-body" id="lv-coach"></div></div></div>
+      <div class="card rawlog-card"><div class="label" style="margin-bottom:4px">RAW STREAM · BLE / SERIAL</div><div class="rawlog-body" id="lv-rawlog"></div></div>
+    </div>`;
+    liveBuilt=true; patchCoach(L); refreshRawLog();
+  }
+
+  function patchLive(){
+    if(!liveBuilt||!$("lv-tripcost")){renderLive();return;}
+    const L=S.live,rated=ratedL100();
+    const l100c=L.l100<=rated?"var(--lime)":L.l100<rated*1.3?"var(--amber)":"var(--rose)";
+    const coolC=L.coolant>105?"var(--rose)":"var(--lime)";
+    const effC =L.efficiency>=100?"var(--lime)":L.efficiency>75?"var(--amber)":"var(--rose)";
+    const egpkm=L.tripKm>0?L.tripCost/L.tripKm:0;
+    txt("lv-tripcost",f(L.tripCost,2));txt("lv-dist",f(L.tripKm,1));txt("lv-costkm",f(egpkm,2));
+    txt("lv-speed",f(L.speed,0));       setArc("lv-arc-speed",L.speed,160);
+    setColor("lv-l100",l100c);txt("lv-l100",f(L.l100,1));setArcColor("lv-arc-l100",L.l100,rated*2.5,l100c);
+    txt("lv-fuelrate",f(L.fuelRate,2)); setArc("lv-arc-fuelrate",L.fuelRate,12);
+    patchStat("lv-rpm",     L.rpm,        "",    0,"#8090b0",L.rpm/50);
+    if(PIDS._locked&&!PIDS.maf.confirmed){setUnavail("lv-maf");}else{patchStat("lv-maf",L.maf,"g/s",1,"#8090b0",L.maf*0.7);}
+    if(PIDS._locked&&!PIDS.coolant.confirmed){setUnavail("lv-coolant");}else{patchStat("lv-coolant",L.coolant,"°C",0,coolC,L.coolant);}
+    patchStat("lv-eff",     L.efficiency, "%",   0,effC,     L.efficiency);
+    if(PIDS._locked&&!PIDS.throttle.confirmed){setUnavail("lv-throttle");}else{patchStat("lv-throttle",L.throttle,"%",0,"#8090b0",L.throttle);}
+    if(PIDS._locked&&!PIDS.load.confirmed){setUnavail("lv-load");}else{patchStat("lv-load",L.engineLoad,"%",0,"#8090b0",L.engineLoad);}
+    if(PIDS._locked&&!PIDS.stft.confirmed){setUnavail("lv-stft");}else{patchStat("lv-stft",L.stft,"%",1,L.stft>=0?"var(--lime)":"var(--amber)",Math.abs(L.stft)*4);}
+    const pml=$("pid-method-label"); if(pml)pml.innerHTML=pidMethodLabel();
+    patchCoach(L); refreshRawLog();
+  }
+
+  function txt(id,v){const e=$(id);if(e)e.textContent=v;}
+  function setColor(id,c){const e=$(id);if(e)e.style.color=c;}
+  function setArc(id,v,m){const e=$(id);if(e)e.setAttribute("d",GAUGE.arc(v,m));}
+  function setArcColor(id,v,m,c){const e=$(id);if(!e)return;e.setAttribute("d",GAUGE.arc(v,m));e.setAttribute("stroke",c);}
+  function patchStat(id,val,unit,dec,color,pct){const vEl=$(`${id}-val`),bEl=$(`${id}-bar`);if(vEl){vEl.innerHTML=`${f(val,dec)}<span class="stat-unit">${unit}</span>`;vEl.style.color=color;}if(bEl){bEl.style.width=`${clamp(pct,0,100)}%`;bEl.style.background=color;}}
+  function setUnavail(id){const vEl=$(`${id}-val`),bEl=$(`${id}-bar`);if(vEl){vEl.innerHTML="N/A";vEl.style.color="var(--dim)";}if(bEl)bEl.style.width="0";}
+
+  function patchCoach(L){
+    const el=$("lv-coach");if(!el)return;
+    const rated=ratedL100();
+    const lines=[];
+    if(L.l100>0&&rated>0){
+      const pct=((L.l100/rated)-1)*100;
+      if(L.l100<=rated) lines.push(`✅ At rated consumption (${f(L.l100,1)} vs ${f(rated,1)} L/100km).`);
+      else if(pct<30)   lines.push(`⚠ ${f(pct,0)}% above rated (${f(L.l100,1)} vs ${f(rated,1)} L/100km). Try smoother acceleration.`);
+      else              lines.push(`⛔ ${f(pct,0)}% above rated (${f(L.l100,1)} vs ${f(rated,1)} L/100km). Check tyre pressure and ease off throttle.`);
+    }
+    if(PIDS.coolant.confirmed&&L.coolant>105) lines.push("⚠ Coolant temp HIGH — check cooling fan/thermostat.");
+    if(PIDS.stft.confirmed&&Math.abs(L.stft)>15) lines.push(`⚠ STFT ${f(L.stft,1)}% — possible vacuum leak or MAF fault.`);
+    if(!PIDS.maf.confirmed&&PIDS._locked)     lines.push(`ℹ No MAF sensor — fuel rate estimated via ${fuelRateMethod}.`);
+    lines.push(`Rate: ${f(L.fuelRate,2)} L/h · Method: ${fuelRateMethod}`);
+    el.textContent=lines.join("\n");
+  }
+
+  // ── Trips tab ─────────────────────────────────────────────────────────────
+  let tripsBuilt=false;
+  function renderTrips(){
+    liveBuilt=false;
+    E.content.innerHTML=`<div class="fade-up"><div style="display:flex;align-items:center;margin-bottom:10px"><div class="label" style="margin:0">GPS TRIPS · ${S.gpsTrips.length} saved</div><div class="gps-badge"><div class="gps-dot${GPS.hasFix?" fix":""}" id="gps-dot"></div><span id="gps-lbl">${GPS.hasFix?"GPS FIX":"NO FIX"}</span></div></div><div id="trip-active-banner" style="display:${GPS.state!=="idle"?"block":"none"}">${activeBannerHTML()}</div><div class="trip-list" id="trip-list"></div><div id="trip-empty" class="card card-p" style="display:${S.gpsTrips.length?"none":"block"}"><div class="trip-meta" style="margin:0">No trips saved yet.<br>Trips start automatically when speed exceeds ${TRIP_START_SPD} km/h.</div></div></div>`;
+    tripsBuilt=true; S.gpsTrips.forEach(t=>appendTripCard(t));
+  }
+  function activeBannerHTML(){ const dur=GPS.startTime?Math.floor((Date.now()-GPS.startTime)/1000):0,avgL100=GPS.l100samples>0?GPS.l100sum/GPS.l100samples:0; return `<div class="active-trip-banner mb8"><div class="active-trip-header"><div class="active-trip-dot"></div><div class="active-trip-title">TRIP IN PROGRESS</div></div><div class="active-trip-from" id="atr-from">From: ${GPS.startCoord?"GPS fix acquired":"Waiting for GPS…"}</div><div class="active-trip-stats"><div><div class="trip-stat-label">DISTANCE</div><div class="trip-stat-val" id="atr-dist" style="color:var(--cyan)">${f(GPS.distKm,2)}<span class="trip-stat-unit">km</span></div></div><div><div class="trip-stat-label">FUEL USED</div><div class="trip-stat-val" id="atr-fuel" style="color:var(--orange)">${f(GPS.fuelL,3)}<span class="trip-stat-unit">L</span></div></div><div><div class="trip-stat-label">COST</div><div class="trip-stat-val" id="atr-cost" style="color:var(--amber)">${f(GPS.cost,2)}<span class="trip-stat-unit">EGP</span></div></div><div><div class="trip-stat-label">AVG L/100</div><div class="trip-stat-val" id="atr-l100" style="color:var(--lime)">${f(avgL100,1)}</div></div><div><div class="trip-stat-label">DURATION</div><div class="trip-stat-val" id="atr-dur" style="color:#8090b0">${fmtDur(dur)}</div></div></div></div>`; }
+  function patchActiveBanner(){ if(!tripsBuilt||!$("trip-list")){renderTrips();return;} const b=$("trip-active-banner");if(!b)return; if(GPS.state==="idle"){b.style.display="none";return;} b.style.display="block"; if(!$("atr-dist")){b.innerHTML=activeBannerHTML();return;} const dur=GPS.startTime?Math.floor((Date.now()-GPS.startTime)/1000):0,avgL100=GPS.l100samples>0?GPS.l100sum/GPS.l100samples:0; txt("atr-dist",f(GPS.distKm,2));txt("atr-fuel",f(GPS.fuelL,3));txt("atr-cost",f(GPS.cost,2));txt("atr-l100",f(avgL100,1));txt("atr-dur",fmtDur(dur)); }
+  function onNewTrip(trip){ if(!tripsBuilt||!$("trip-list"))return; const e=$("trip-empty");if(e)e.style.display="none"; const b=$("trip-active-banner");if(b)b.style.display="none"; appendTripCard(trip,true); }
+  function appendTripCard(trip,prepend=false){
+    const list=$("trip-list");if(!list)return;
+    const rated=ratedL100(),l100c=trip.avgL100<=rated?"var(--lime)":trip.avgL100<rated*1.3?"var(--amber)":"var(--rose)";
+    const eff=trip.avgL100>0?clamp((rated/trip.avgL100)*100,0,150):100,effC=eff>=100?"var(--lime)":eff>75?"var(--amber)":"var(--rose)";
+    const div=document.createElement("div");div.className="card trip-card";div.dataset.tripId=trip.id;
+    div.innerHTML=`<div class="trip-route-row"><span class="trip-area trip-from-area">${trip.startArea}</span><span class="trip-arrow">→</span><span class="trip-area trip-to-area">${trip.endArea}</span></div><div class="trip-meta">${fmtDate(trip.startTime)} · ${fmtDur(trip.durationSec)}</div><div class="trip-stats"><div><div class="trip-stat-label">DISTANCE</div><div class="trip-stat-val" style="color:var(--cyan)">${f(trip.distKm,2)}<span class="trip-stat-unit">km</span></div></div><div><div class="trip-stat-label">FUEL USED</div><div class="trip-stat-val" style="color:var(--orange)">${f(trip.fuelL,3)}<span class="trip-stat-unit">L</span></div></div><div><div class="trip-stat-label">COST</div><div class="trip-stat-val" style="color:var(--amber)">${f(trip.cost,2)}<span class="trip-stat-unit">EGP</span></div></div><div><div class="trip-stat-label">AVG L/100</div><div class="trip-stat-val" style="color:${l100c}">${f(trip.avgL100,1)}</div></div><div><div class="trip-stat-label">VS RATED</div><div class="trip-stat-val" style="color:${effC}">${f(eff,0)}<span class="trip-stat-unit">%</span></div></div><div><div class="trip-stat-label">MAX SPEED</div><div class="trip-stat-val" style="color:#8090b0">${f(trip.maxSpd,0)}<span class="trip-stat-unit">km/h</span></div></div></div>`;
+    if(prepend)list.prepend(div);else list.appendChild(div);
+  }
+
+  // ── Weekly tab ────────────────────────────────────────────────────────────
+  let weeklyBuilt=false;
+  function renderWeekly(){
+    liveBuilt=false; const td=today();
+    E.content.innerHTML=`<div class="fade-up"><div class="label" style="margin-bottom:10px">WEEKLY FUEL SPEND</div><div class="card week-chart-card"><div class="week-bars">${WEEK_DAYS.map(d=>{const isd=d===td;return `<div class="week-col"><div class="week-val" id="wk-val-${d}" style="${!isd?"opacity:0.5":""}">0.0</div><div class="week-bar-wrap"><div class="week-bar${isd?" today":""}" id="wk-bar-${d}" style="height:2%"></div></div><div class="week-day-label${isd?" today":""}">${d}</div></div>`;}).join("")}</div></div><div class="g3" style="margin-bottom:8px"><div class="card metric-card"><div class="label">WEEKLY TOTAL</div><div class="metric-val" id="wk-total" style="color:var(--amber)">0.00</div><div class="metric-unit">EGP</div></div><div class="card metric-card"><div class="label">DAILY AVG</div><div class="metric-val" id="wk-avg" style="color:#8090b0">0.00</div><div class="metric-unit">EGP</div></div><div class="card metric-card"><div class="label">MONTHLY EST.</div><div class="metric-val" id="wk-monthly" style="color:var(--rose)">0</div><div class="metric-unit">EGP</div></div></div><div class="g2"><div class="card metric-card"><div class="label">LITRES / WEEK</div><div class="metric-val" id="wk-litres" style="color:var(--cyan)">0.0</div><div class="metric-unit">L</div></div><div class="card metric-card"><div class="label">PRICE / LITRE</div><div class="metric-val" style="color:var(--lime)">${fuelPrice().toFixed(2)}</div><div class="metric-unit">EGP</div></div></div></div>`;
+    weeklyBuilt=true; patchWeekly();
+  }
+  function patchWeekly(){
+    if(!weeklyBuilt||!$("wk-total")){renderWeekly();return;}
+    const data=WEEK_DAYS.map(d=>({day:d,egp:S.daySpend[d]||0}));
+    const maxVal=Math.max(...data.map(d=>d.egp),1),total=data.reduce((s,d)=>s+d.egp,0);
+    data.forEach(({day,egp})=>{const bar=$(`wk-bar-${day}`),val=$(`wk-val-${day}`);if(bar)bar.style.height=`${clamp((egp/maxVal)*100,2,100)}%`;if(val)val.textContent=f(egp,1);});
+    txt("wk-total",f(total,2));txt("wk-avg",f(total/7,2));txt("wk-monthly",f(total*4.3,0));txt("wk-litres",f(total/fuelPrice(),1));
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  AI COACH — real OpenAI gpt-4o-mini integration
+  // ══════════════════════════════════════════════════════════════════════════
+
+  function buildSystemPrompt(){
+    const L=S.live, rated=ratedL100(), total=WEEK_DAYS.reduce((s,d)=>s+S.daySpend[d],0);
+    const confirmedPids=[]; if(PIDS.maf.confirmed)confirmedPids.push("MAF"); if(PIDS.load.confirmed)confirmedPids.push("EngineLoad"); if(PIDS.coolant.confirmed)confirmedPids.push("Coolant"); if(PIDS.stft.confirmed)confirmedPids.push("STFT"); if(PIDS.throttle.confirmed)confirmedPids.push("Throttle"); confirmedPids.push("RPM","Speed");
+    const tripsSummary = S.gpsTrips.length
+      ? S.gpsTrips.slice(0,5).map((t,i)=>`${i+1}. ${t.startArea}→${t.endArea}: ${f(t.distKm,1)}km, ${f(t.avgL100,1)}L/100km, ${f(t.cost,2)} EGP, ${fmtDur(t.durationSec)}`).join("\n")
+      : "No trips recorded yet.";
+    return `You are FuelTrack AI Coach, an expert automotive fuel efficiency and diagnostics assistant built into a real-time OBD-II monitoring app.
+
+VEHICLE:
+- ${CAR?.year||"Unknown"} ${CAR?.make||""} ${CAR?.model||""} ${CAR?.trim||""}
+- Engine: ${CAR?.displacement||"?"}L, ${CAR?.cylinders||"?"} cylinders
+- Transmission: ${CAR?.transmission||"unknown"}
+- Fuel type: ${CAR?.fuelType||"Gasoline"}
+- Manufacturer rated: City ${f(CAR?.ratedCityL100,1)}, Combined ${f(CAR?.ratedCombL100,1)}, Highway ${f(CAR?.ratedHwyL100,1)} L/100km
+- Fuel price: ${fuelPrice().toFixed(2)} EGP/L
+
+CURRENT LIVE DATA:
+- Speed: ${f(L.speed,0)} km/h | RPM: ${f(L.rpm,0)}
+- Actual L/100km: ${f(L.l100,1)} (rated: ${f(rated,1)}) — ${f(L.efficiency,0)}% of rated efficiency
+- Fuel rate: ${f(L.fuelRate,2)} L/h (calculated via: ${fuelRateMethod})
+- Engine load: ${PIDS.load.confirmed?f(L.engineLoad,0)+"%":"not available"}
+- Coolant temp: ${PIDS.coolant.confirmed?f(L.coolant,0)+"°C":"not available"}
+- MAF: ${PIDS.maf.confirmed?f(L.maf,1)+" g/s":"not available — using fallback calculation"}
+- STFT: ${PIDS.stft.confirmed?f(L.stft,1)+"%":"not available"}
+- Throttle: ${PIDS.throttle.confirmed?f(L.throttle,0)+"%":"not available"}
+- Confirmed PIDs: ${confirmedPids.join(", ")}
+- Session: ${f(L.tripKm,2)} km driven, ${f(L.tripCost,2)} EGP spent
+
+WEEKLY SPENDING:
+${WEEK_DAYS.map(d=>`- ${d}: ${f(S.daySpend[d],2)} EGP`).join("\n")}
+- Total this week: ${f(total,2)} EGP | Litres: ${f(total/fuelPrice(),1)} L | Monthly estimate: ${f(total*4.3,0)} EGP
+
+RECENT TRIPS (last 5):
+${tripsSummary}
+
+INSTRUCTIONS:
+- Be concise and specific. Use the actual numbers from the data above.
+- When PIDs are unavailable, acknowledge the limitation and explain how the calculation was done instead.
+- Give actionable advice based on the specific car model and real data.
+- Use metric units. Currency is EGP.
+- Format numbers clearly. Use short bullet points when listing multiple items.
+- If the user asks something unrelated to the car/fuel/driving, politely redirect.`;
+  }
+
+  async function callOpenAI(messages){
+    const r = await fetch("https://api.openai.com/v1/chat/completions",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":`Bearer ${OPENAI_KEY}`},
+      body: JSON.stringify({ model:"gpt-4o-mini", messages, max_tokens:500, temperature:0.7 })
+    });
+    if(!r.ok){
+      const err=await r.json().catch(()=>({}));
+      throw new Error(err?.error?.message||`HTTP ${r.status}`);
+    }
+    const data=await r.json();
+    return data.choices[0].message.content;
+  }
+
+  function renderAIKeySetup(){
+    const box=document.getElementById("content");
+    box.innerHTML=`<div class="fade-up"><div class="ai-key-box">
+      <div class="ai-key-title">AI COACH SETUP</div>
+      <div class="ai-key-sub">FuelTrack AI Coach uses OpenAI GPT-4o-mini to analyse your live OBD data, fuel consumption, engine health, and trip history — and give you real, personalised answers.\n\nYou need an OpenAI API key. Your key is stored only in your browser's localStorage and is never sent anywhere except directly to OpenAI.</div>
+      <div class="setup-field-label" style="margin-bottom:6px">OPENAI API KEY</div>
+      <input class="ai-key-input" id="ai-key-inp" type="password" placeholder="sk-..." value="${OPENAI_KEY||""}"/>
+      <button class="ai-key-save" id="ai-key-save">SAVE &amp; START CHATTING</button>
+      <div class="ai-key-note">
+        Get a key at platform.openai.com → API Keys.<br>
+        GPT-4o-mini costs ~$0.002 per conversation — extremely cheap.<br>
+        ⚠ This is a personal tool. Do not share your key with others.
+      </div>
+      <div class="setup-error" id="ai-key-err"></div>
+    </div></div>`;
+    document.getElementById("ai-key-save").onclick=()=>{
+      const k=document.getElementById("ai-key-inp").value.trim();
+      if(!k||!k.startsWith("sk-")){ document.getElementById("ai-key-err").textContent="Enter a valid OpenAI key (starts with sk-)."; return; }
+      OPENAI_KEY=k; try{localStorage.setItem(LS.AIKEY,k);}catch(e){}
+      renderAI();
+    };
+  }
+
+  function renderAI(){
+    if(!OPENAI_KEY){ renderAIKeySetup(); return; }
+    liveBuilt=false;
+    E.content.innerHTML=`<div class="fade-up ai-container">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-shrink:0">
+        <div class="live-chips" id="ai-chips" style="margin:0;flex:1"></div>
+        <span class="ai-key-change" id="ai-key-change">change key</span>
+      </div>
+      <div class="messages" id="ai-msgs"></div>
+      <div class="quick-prompts" id="ai-qp"></div>
+      <div class="chat-input-row">
+        <textarea class="chat-textarea" id="ai-input" rows="2" placeholder="Ask about your ${CAR?CAR.make+" "+CAR.model:"car"}, fuel, engine… (Enter to send)"></textarea>
+        <button class="send-btn" id="ai-send">SEND</button>
+      </div>
+    </div>`;
+
+    document.getElementById("ai-key-change").onclick=()=>{ if(confirm("Change OpenAI API key?")){ OPENAI_KEY=""; localStorage.removeItem(LS.AIKEY); renderAIKeySetup(); } };
+
+    updateAIChips();
+
+    const msgsEl=$("ai-msgs");
+    S.msgs.forEach(m=>appendBubble(msgsEl,m.role,m.text));
+    msgsEl.scrollTop=msgsEl.scrollHeight;
+
+    const qpEl=$("ai-qp");
+    QUICK_PROMPTS.forEach(q=>{ const btn=document.createElement("button"); btn.className="qpbtn"; btn.textContent=q; btn.onclick=()=>sendMsg(q); qpEl.appendChild(btn); });
+
+    const inp=$("ai-input"),snd=$("ai-send");
+    inp.value=S.chatInput; snd.disabled=!S.chatInput.trim()||S.aiLoading;
+    inp.addEventListener("input",()=>{ S.chatInput=inp.value; snd.disabled=!inp.value.trim()||S.aiLoading; });
+    inp.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();} });
+    snd.addEventListener("click",()=>sendMsg());
+  }
+
+  function appendBubble(container, role, text, isThinking=false){
+    const row=document.createElement("div"); row.className="msg-row "+(role==="user"?"user":"assistant");
+    const bbl=document.createElement("div"); bbl.className="bubble "+role+(isThinking?" thinking":"");
+    if(role==="assistant"){ const lbl=document.createElement("div"); lbl.className="bubble-label"; lbl.textContent="AI COACH"; bbl.appendChild(lbl); }
+    if(isThinking){ bbl.innerHTML+='<div class="dots"><span>●</span> <span>●</span> <span>●</span></div>'; }
+    else{ bbl.appendChild(document.createTextNode(text)); }
+    row.appendChild(bbl); container.appendChild(row);
+    container.scrollTop=container.scrollHeight;
+    return bbl;
+  }
+
+  function updateAIChips(){
+    const ch=$("ai-chips"); if(!ch)return;
+    const L=S.live,rated=ratedL100();
+    ch.innerHTML=`<div class="chip"><span class="chip-label">SPEED</span><span class="chip-val" style="color:var(--cyan)">${f(L.speed,0)} km/h</span></div><div class="chip"><span class="chip-label">L/100</span><span class="chip-val" style="color:${L.l100<=rated?"var(--lime)":"var(--amber)"}">${f(L.l100,1)}</span></div><div class="chip"><span class="chip-label">RATED</span><span class="chip-val" style="color:var(--blue)">${f(rated,1)}</span></div><div class="chip"><span class="chip-label">TRIPS</span><span class="chip-val" style="color:var(--violet)">${S.gpsTrips.length}</span></div>`;
+  }
+
+  async function sendMsg(custom){
+    const text=(custom||S.chatInput||"").trim(); if(!text||S.aiLoading)return;
+    S.chatInput=""; S.aiLoading=true;
+
+    S.msgs.push({role:"user",text});
+    const inp=$("ai-input"),snd=$("ai-send");
+    if(inp)inp.value=""; if(snd)snd.disabled=true;
+
+    const msgsEl=$("ai-msgs"); if(!msgsEl)return;
+    appendBubble(msgsEl,"user",text);
+
+    // thinking bubble
+    const thinkBbl=appendBubble(msgsEl,"assistant","",true);
+
+    try{
+      // Build messages array for API — system + last 10 exchanges to stay within token budget
+      const history=S.msgs.slice(-20).map(m=>({role:m.role,content:m.text}));
+      const apiMsgs=[{role:"system",content:buildSystemPrompt()}, ...history];
+
+      const reply=await callOpenAI(apiMsgs);
+
+      // Replace thinking bubble with real reply
+      thinkBbl.className="bubble assistant";
+      thinkBbl.innerHTML=""; // clear dots
+      const lbl=document.createElement("div"); lbl.className="bubble-label"; lbl.textContent="AI COACH"; thinkBbl.appendChild(lbl);
+      thinkBbl.appendChild(document.createTextNode(reply));
+      msgsEl.scrollTop=msgsEl.scrollHeight;
+
+      S.msgs.push({role:"assistant",text:reply});
+      saveNow();
+    }catch(err){
+      thinkBbl.className="bubble assistant";
+      thinkBbl.innerHTML="";
+      const lbl=document.createElement("div"); lbl.className="bubble-label"; lbl.textContent="AI COACH"; thinkBbl.appendChild(lbl);
+      const errText=err.message.includes("401")?"Invalid API key. Click 'change key' to update it.":err.message.includes("429")?"Rate limited — wait a moment and try again.":err.message.includes("insufficient")?"Insufficient API credits. Top up at platform.openai.com.":`Error: ${err.message}`;
+      thinkBbl.appendChild(document.createTextNode("⚠ "+errText));
+    }finally{
+      S.aiLoading=false;
+      if(inp)inp.value=S.chatInput;
+      if(snd)snd.disabled=!S.chatInput.trim();
+    }
+  }
+
+  // ── Tab router ────────────────────────────────────────────────────────────
+  function renderTab(){
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===S.tab));
+    liveBuilt=false; tripsBuilt=false; weeklyBuilt=false;
+    if     (S.tab==="live")   renderLive();
+    else if(S.tab==="trips")  renderTrips();
+    else if(S.tab==="weekly") renderWeekly();
+    else                      renderAI();
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  function initApp(){
+    bindDOM(); loadStorage();
+    E.tabs.querySelectorAll(".tab-btn").forEach(b=>b.addEventListener("click",()=>{S.tab=b.dataset.tab||"live";renderTab();}));
+    E.bleBtn.addEventListener("click",  async()=>S.ble.connected   ?bleDisconnect():await bleConnect());
+    E.serBtn.addEventListener("click",  async()=>S.serial.connected?serDisconnect():await serConnect());
+    E.clearBtn.addEventListener("click",()=>clearAllData());
+    E.settingsBtn.addEventListener("click",()=>openSetup(true));
+    setInterval(()=>{S.elapsed++;E.clock.textContent=fmtT(S.elapsed);},1000);
+    gpsInit(); updateHeader(); renderTab();
+  }
+
+  function boot(){
+    const saved=loadCarProfile();
+    if(saved){
+      CAR=saved;
+      try{ const k=localStorage.getItem(LS.AIKEY); if(k)OPENAI_KEY=k; }catch(e){}
+      document.getElementById("setup-overlay").classList.add("hidden");
+      document.getElementById("app").style.display="flex";
+      initApp();
+    } else {
+      renderStep(1);
+    }
+  }
+
+  if(document.readyState==="loading")
+    document.addEventListener("DOMContentLoaded",boot,{once:true});
+  else boot();
+
+})();
+</script>
+</body>
+</html>
